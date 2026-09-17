@@ -1,161 +1,420 @@
-import cv2
-import time
-
-# 初期設定
-delay_seconds = 3
-record_seconds = 10
-CAMERA_ID = 0
-
-state = "READY"  # READY, WAITING, RECORDING, REVIEW
-state_start_time = 0
-recorded_frames = []
-review_index = 0
-is_playing = False
-
-# ボタンのクリック処理
-def mouse_callback(event, x, y, flags, param):
-    global delay_seconds, record_seconds, state, state_start_time, recorded_frames, is_playing
-    
-    if event == cv2.EVENT_LBUTTONDOWN:
-        # Delay - ボタン
-        if 20 <= x <= 60 and 80 <= y <= 115:
-            delay_seconds = max(0, delay_seconds - 1)
-        # Delay + ボタン
-        elif 160 <= x <= 200 and 80 <= y <= 115:
-            delay_seconds += 1
-            
-        # Rec - ボタン
-        elif 220 <= x <= 260 and 80 <= y <= 115:
-            record_seconds = max(1, record_seconds - 1)
-        # Rec + ボタン
-        elif 360 <= x <= 400 and 80 <= y <= 115:
-            record_seconds += 1
-
-        # メインアクションボタン（スタート / 再生 / 停止）
-        elif 20 <= x <= 220 and 130 <= y <= 180:
-            if state in ["READY", "REVIEW"]:
-                state = "WAITING" if delay_seconds > 0 else "RECORDING"
-                state_start_time = time.time()
-                recorded_frames = []
-                is_playing = False
-
-        # 再生/一時停止ボタン（REVIEW時のみ）
-        elif 240 <= x <= 400 and 130 <= y <= 180 and state == "REVIEW":
-            is_playing = not is_playing
-
-def draw_button(img, text, pt1, pt2, bg_color, text_color=(255, 255, 255)):
-    """ボタン描画用関数"""
-    cv2.rectangle(img, pt1, pt2, bg_color, -1)
-    cv2.rectangle(img, pt1, pt2, (200, 200, 200), 1)
-    
-    # テキスト配置位置の調整
-    text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
-    tx = pt1[0] + (pt2[0] - pt1[0] - text_size[0]) // 2
-    ty = pt1[1] + (pt2[1] - pt1[1] + text_size[1]) // 2
-    cv2.putText(img, text, (tx, ty), cv2.FONT_HERSHEY_SIMPLEX, 0.6, text_color, 2, cv2.LINE_AA)
-
-def main():
-    global state, state_start_time, recorded_frames, review_index, is_playing
-
-    cap = cv2.VideoCapture(CAMERA_ID)
-    if not cap.isOpened():
-        print("エラー: カメラが起動できません。")
-        return
-
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if fps <= 0: fps = 30.0
-
-    window_name = "Off-Training Camera Pro"
-    cv2.namedWindow(window_name)
-    cv2.setMouseCallback(window_name, mouse_callback)
-
-    while True:
-        ret, frame = cap.read()
-        if not ret: break
-
-        frame = cv2.flip(frame, 1)
-        h, w, _ = frame.shape
-        current_time = time.time()
-        display = frame.copy()
-
-        # 状態更新
-        if state == "WAITING":
-            elapsed = current_time - state_start_time
-            if elapsed >= delay_seconds:
-                state = "RECORDING"
-                state_start_time = time.time()
-                recorded_frames = []
-
-        elif state == "RECORDING":
-            elapsed = current_time - state_start_time
-            recorded_frames.append(frame.copy())
-            if elapsed >= record_seconds:
-                state = "REVIEW"
-                review_index = 0
-                is_playing = False  # 録画直後は電池節約のため静止
-
-        elif state == "REVIEW":
-            if len(recorded_frames) > 0:
-                if is_playing:
-                    display = recorded_frames[review_index].copy()
-                    review_index = (review_index + 1) % len(recorded_frames)
-                else:
-                    display = recorded_frames[0].copy()
-
-        # --- UIパネル（上部コントロールエリア） ---
-        overlay = display.copy()
-        cv2.rectangle(overlay, (0, 0), (w, 195), (20, 20, 20), -1)
-        cv2.addWeighted(overlay, 0.7, display, 0.3, 0, display)
-
-        # ステータス表示
-        status_colors = {
-            "READY": (255, 229, 0),
-            "WAITING": (0, 255, 255),
-            "RECORDING": (50, 50, 255),
-            "REVIEW": (100, 217, 76)
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>オフトレカメラ Pro</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
         }
-        status_text = state
-        if state == "WAITING":
-            rem = max(0.0, delay_seconds - (current_time - state_start_time))
-            status_text = f"START IN {rem:.1f}s"
-        elif state == "RECORDING":
-            rem = max(0.0, record_seconds - (current_time - state_start_time))
-            status_text = f"REC {rem:.1f}s"
-        elif state == "REVIEW":
-            status_text = "PAUSED (Tap Play)" if not is_playing else "PLAYING"
 
-        cv2.putText(display, f"STATUS: {status_text}", (20, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, status_colors[state], 2, cv2.LINE_AA)
+        body {
+            background-color: #121214;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 12px;
+        }
 
-        # Delay 設定コントロール
-        cv2.putText(display, f"Delay: {delay_seconds}s", (75, 103), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-        draw_button(display, "-", (20, 80), (60, 115), (50, 50, 50))
-        draw_button(display, "+", (160, 80), (200, 115), (50, 50, 50))
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
 
-        # Record 設定コントロール
-        cv2.putText(display, f"Rec: {record_seconds}s", (280, 103), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-        draw_button(display, "-", (220, 80), (260, 115), (50, 50, 50))
-        draw_button(display, "+", (360, 80), (400, 115), (50, 50, 50))
+        /* 画面表示部 */
+        .screen-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background-color: #000000;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
 
-        # アクションボタン
-        btn_label = "START REC" if state in ["READY", "REVIEW"] else "CANCEL"
-        btn_color = (0, 150, 255) if state in ["READY", "REVIEW"] else (50, 50, 200)
-        draw_button(display, btn_label, (20, 130), (220, 180), btn_color)
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
 
-        # リプレイボタン（REVIEW時のみ）
-        if state == "REVIEW":
-            p_label = "PAUSE" if is_playing else "PLAY"
-            p_color = (100, 100, 100) if is_playing else (76, 217, 100)
-            draw_button(display, p_label, (240, 130), (400, 180), p_color, (0, 0, 0) if not is_playing else (255,255,255))
+        /* 撮影中は自撮り用に鏡像反転 */
+        #liveVideo {
+            transform: scaleX(-1);
+        }
 
-        cv2.imshow(window_name, display)
+        #reviewVideo {
+            display: none;
+        }
 
-        # 'q' キーで終了
-        if cv2.waitKey(int(1000 / fps)) & 0xFF == ord('q'):
-            break
+        /* ステータス・カウントダウン表示 */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 14px 18px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
 
-    cap.release()
-    cv2.destroyAllWindows()
+        .status-badge {
+            font-weight: 700;
+            font-size: 13px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            backdrop-filter: blur(8px);
+        }
 
-if __name__ == "__main__":
-    main()
+        .status-ready { color: #00e5ff; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; }
+        .status-waiting { color: #ffd600; background: rgba(255, 214, 0, 0.15); border: 1px solid #ffd600; }
+        .status-recording { color: #ff3b30; background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; animation: pulse 1s infinite; }
+        .status-review { color: #30d158; background: rgba(48, 209, 88, 0.15); border: 1px solid #30d158; }
+
+        @keyframes pulse {
+            50% { opacity: 0.5; }
+        }
+
+        .countdown-display {
+            font-size: 32px;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        /* 操作パネル */
+        .controls-panel {
+            width: 100%;
+            background-color: #1c1c1e;
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .setting-card {
+            background-color: #2c2c2e;
+            border-radius: 14px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .setting-label {
+            font-size: 11px;
+            color: #8e8e93;
+            font-weight: 600;
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-adjust {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: none;
+            background-color: #3a3a3c;
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s, transform 0.1s;
+        }
+
+        .btn-adjust:active {
+            background-color: #00e5ff;
+            color: #000000;
+            transform: scale(0.92);
+        }
+
+        .setting-value {
+            font-size: 18px;
+            font-weight: 700;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        /* アクションボタン */
+        .btn-main {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-main:active {
+            transform: scale(0.97);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #00e5ff, #0066ff);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(0, 102, 255, 0.4);
+        }
+
+        .btn-cancel {
+            background-color: #ff3b30;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- カメラ / リプレイ表示領域 -->
+    <div class="screen-wrapper">
+        <div class="overlay">
+            <div id="statusBadge" class="status-badge status-ready">READY</div>
+            <div id="countdown" class="countdown-display"></div>
+        </div>
+        <video id="liveVideo" autoplay playsinline muted></video>
+        <video id="reviewVideo" playsinline controls></video>
+    </div>
+
+    <!-- コントロール部 -->
+    <div class="controls-panel">
+        <!-- 秒数設定 -->
+        <div class="settings-grid">
+            <div class="setting-card">
+                <span class="setting-label">準備ディレイ</span>
+                <div class="setting-control">
+                    <button class="btn-adjust" onclick="adjustDelay(-1)">-</button>
+                    <span id="delayVal" class="setting-value">3秒</span>
+                    <button class="btn-adjust" onclick="adjustDelay(1)">+</button>
+                </div>
+            </div>
+            <div class="setting-card">
+                <span class="setting-label">録画時間</span>
+                <div class="setting-control">
+                    <button class="btn-adjust" onclick="adjustRecord(-1)">-</button>
+                    <span id="recordVal" class="setting-value">10秒</span>
+                    <button class="btn-adjust" onclick="adjustRecord(1)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- スタート/キャンセル ボタン -->
+        <button id="mainBtn" class="btn-main btn-start" onclick="handleMainAction()">
+            ▶ 撮影スタート
+        </button>
+    </div>
+</div>
+
+<script>
+    let delaySeconds = 3;
+    let recordSeconds = 10;
+    
+    let currentState = "READY"; // READY, WAITING, RECORDING, REVIEW
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let timerInterval = null;
+
+    const liveVideo = document.getElementById('liveVideo');
+    const reviewVideo = document.getElementById('reviewVideo');
+    const statusBadge = document.getElementById('statusBadge');
+    const countdownEl = document.getElementById('countdown');
+    const mainBtn = document.getElementById('mainBtn');
+
+    // カメラ起動処理
+    async function initCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            });
+            liveVideo.srcObject = stream;
+        } catch (err) {
+            alert("カメラの利用を許可してください: " + err.message);
+        }
+    }
+
+    // 秒数調整
+    function adjustDelay(delta) {
+        if (currentState !== "READY" && currentState !== "REVIEW") return;
+        delaySeconds = Math.max(0, delaySeconds + delta);
+        document.getElementById('delayVal').innerText = delaySeconds + "秒";
+    }
+
+    function adjustRecord(delta) {
+        if (currentState !== "READY" && currentState !== "REVIEW") return;
+        recordSeconds = Math.max(1, recordSeconds + delta);
+        document.getElementById('recordVal').innerText = recordSeconds + "秒";
+    }
+
+    // ボタンタップ時の処理
+    function handleMainAction() {
+        if (currentState === "READY" || currentState === "REVIEW") {
+            startProcess();
+        } else {
+            resetToReady();
+        }
+    }
+
+    // 一連の撮影プロセス開始
+    function startProcess() {
+        reviewVideo.pause();
+        reviewVideo.style.display = "none";
+        liveVideo.style.display = "block";
+
+        if (delaySeconds > 0) {
+            setState("WAITING");
+            let count = delaySeconds;
+            countdownEl.innerText = count + "s";
+
+            timerInterval = setInterval(() => {
+                count--;
+                if (count <= 0) {
+                    clearInterval(timerInterval);
+                    countdownEl.innerText = "";
+                    startRecording();
+                } else {
+                    countdownEl.innerText = count + "s";
+                }
+            }, 1000);
+        } else {
+            startRecording();
+        }
+    }
+
+    // 録画開始
+    function startRecording() {
+        setState("RECORDING");
+        recordedChunks = [];
+        
+        const stream = liveVideo.srcObject;
+        if (!stream) return;
+
+        let mimeType = 'video/webm';
+        if (MediaRecorder.isTypeSupported('video/mp4')) {
+            mimeType = 'video/mp4';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+            mimeType = 'video/webm;codecs=vp9';
+        }
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+            const videoURL = URL.createObjectURL(blob);
+            
+            reviewVideo.src = videoURL;
+            liveVideo.style.display = "none";
+            reviewVideo.style.display = "block";
+            
+            setState("REVIEW");
+        };
+
+        mediaRecorder.start();
+
+        let count = recordSeconds;
+        countdownEl.innerText = count + "s";
+
+        timerInterval = setInterval(() => {
+            count--;
+            if (count <= 0) {
+                clearInterval(timerInterval);
+                countdownEl.innerText = "";
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    mediaRecorder.stop();
+                }
+            } else {
+                countdownEl.innerText = count + "s";
+            }
+        }, 1000);
+    }
+
+    // UI状態切替
+    function setState(state) {
+        currentState = state;
+        statusBadge.className = "status-badge";
+
+        if (state === "READY") {
+            statusBadge.classList.add("status-ready");
+            statusBadge.innerText = "READY";
+            mainBtn.className = "btn-main btn-start";
+            mainBtn.innerText = "▶ 撮影スタート";
+            countdownEl.innerText = "";
+        } else if (state === "WAITING") {
+            statusBadge.classList.add("status-waiting");
+            statusBadge.innerText = "COUNTDOWN";
+            mainBtn.className = "btn-main btn-cancel";
+            mainBtn.innerText = "■ キャンセル";
+        } else if (state === "RECORDING") {
+            statusBadge.classList.add("status-recording");
+            statusBadge.innerText = "● REC";
+            mainBtn.className = "btn-main btn-cancel";
+            mainBtn.innerText = "■ 停止";
+        } else if (state === "REVIEW") {
+            statusBadge.classList.add("status-review");
+            statusBadge.innerText = "REVIEW";
+            mainBtn.className = "btn-main btn-start";
+            mainBtn.innerText = "🔄 もう一度撮影";
+            countdownEl.innerText = "";
+        }
+    }
+
+    // キャンセル・リセット
+    function resetToReady() {
+        if (timerInterval) clearInterval(timerInterval);
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+        }
+        reviewVideo.pause();
+        reviewVideo.style.display = "none";
+        liveVideo.style.display = "block";
+        setState("READY");
+    }
+
+    // 初期化
+    window.addEventListener('DOMContentLoaded', initCamera);
+</script>
+
+</body>
+</html>
