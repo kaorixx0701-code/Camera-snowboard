@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>簡易オフトレカメラ</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #222; color: #fff; margin: 0; padding: 20px; }
+    video { width: 100%; max-width: 500px; background: #000; border-radius: 8px; }
+    button { padding: 12px 24px; font-size: 18px; margin: 10px; cursor: pointer; border-radius: 6px; border: none; background: #007bff; color: #fff; }
+    button:disabled { background: #555; }
+    #status { font-size: 24px; font-weight: bold; color: #ffeb3b; margin: 15px 0; }
+  </style>
+</head>
+<body>
+
+  <h2>簡易オフトレカメラ</h2>
+  <video id="preview" autoplay playsinline muted></video>
+  <div id="status">準備完了</div>
+  <button id="startBtn">10秒後に5秒間撮影</button>
+
+  <script>
+    const preview = document.getElementById('preview');
+    const status = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+    let mediaRecorder;
+    let recordedChunks = [];
+
+    // カメラの起動
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => { preview.srcObject = stream; })
+      .catch(err => alert("カメラの許可が必要です: " + err));
+
+    startBtn.addEventListener('click', () => {
+      startBtn.disabled = true;
+      let delay = 10; // 録画開始までの遅延（秒）
+      let recordTime = 5; // 録画する時間（秒）
+
+      // 1. カウントダウン（遅延処理）
+      status.innerText = `撮影開始まで: ${delay}秒`;
+      const timer = setInterval(() => {
+        delay--;
+        if (delay > 0) {
+          status.innerText = `撮影開始まで: ${delay}秒`;
+        } else {
+          clearInterval(timer);
+          startRecording(recordTime);
+        }
+      }, 1000);
+    });
+
+    function startRecording(duration) {
+      recordedChunks = [];
+      const stream = preview.srcObject;
+      mediaRecorder = new MediaRecorder(stream);
+
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      
+      // 録画終了時に自動で動画をダウンロード保存
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/mp4' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `off-training-${Date.now()}.mp4`;
+        a.click();
+        status.innerText = "保存完了！";
+        startBtn.disabled = false;
+      };
+
+      mediaRecorder.start();
+      
+      // 2. 指定時間後に自動停止
+      let left = duration;
+      status.innerText = `● 録画中: ${left}秒`;
+      const recTimer = setInterval(() => {
+        left--;
+        if (left > 0) {
+          status.innerText = `● 録画中: ${left}秒`;
+        } else {
+          clearInterval(recTimer);
+          mediaRecorder.stop();
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
