@@ -170,7 +170,7 @@
         }
 
         /* ボタン共通 */
-        .btn-main, .btn-secondary {
+        .btn-main, .btn-secondary, .btn-save {
             width: 100%;
             padding: 14px;
             border: none;
@@ -185,7 +185,7 @@
             transition: transform 0.1s, opacity 0.2s;
         }
 
-        .btn-main:active, .btn-secondary:active {
+        .btn-main:active, .btn-secondary:active, .btn-save:active {
             transform: scale(0.97);
         }
 
@@ -208,6 +208,15 @@
             background-color: #2c2c2e;
             color: #00e5ff;
             border: 1px solid #3a3a3c;
+        }
+
+        .btn-save {
+            background-color: #30d158;
+            color: #ffffff;
+            font-size: 16px;
+            padding: 14px;
+            display: none; /* REVIEW時のみ表示 */
+            box-shadow: 0 4px 15px rgba(48, 209, 88, 0.3);
         }
     </style>
 </head>
@@ -251,6 +260,11 @@
             🔄 カメラ切替 (現在: インカメラ)
         </button>
 
+        <!-- 動画保存ボタン（撮影後のみ出現） -->
+        <button id="saveBtn" class="btn-save" onclick="saveVideo()">
+            💾 動画を保存 (カメラロールへ)
+        </button>
+
         <!-- スタート/キャンセル ボタン -->
         <button id="mainBtn" class="btn-main btn-start" onclick="handleMainAction()">
             ▶ 撮影スタート
@@ -274,10 +288,10 @@
     const countdownEl = document.getElementById('countdown');
     const mainBtn = document.getElementById('mainBtn');
     const camSwitchBtn = document.getElementById('camSwitchBtn');
+    const saveBtn = document.getElementById('saveBtn');
 
     // カメラ起動・切り替え処理
     async function initCamera() {
-        // 既存のストリームがあれば停止
         if (liveVideo.srcObject) {
             liveVideo.srcObject.getTracks().forEach(track => track.stop());
         }
@@ -289,7 +303,6 @@
             });
             liveVideo.srcObject = stream;
 
-            // インカメラの時だけ左右反転（鏡像）にする
             if (currentFacingMode === "user") {
                 liveVideo.classList.add('mirror');
                 camSwitchBtn.innerText = "🔄 カメラ切替 (現在: インカメラ)";
@@ -365,11 +378,12 @@
         const stream = liveVideo.srcObject;
         if (!stream) return;
 
-        let mimeType = 'video/webm';
-        if (MediaRecorder.isTypeSupported('video/mp4')) {
-            mimeType = 'video/mp4';
-        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        let mimeType = 'video/mp4';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
             mimeType = 'video/webm;codecs=vp9';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                mimeType = 'video/webm';
+            }
         }
 
         mediaRecorder = new MediaRecorder(stream, { mimeType });
@@ -408,6 +422,50 @@
         }, 1000);
     }
 
+    // 動画保存・カメラロールへの書き出し処理
+    async function saveVideo() {
+        if (!recordedChunks || recordedChunks.length === 0) return;
+
+        const mimeType = mediaRecorder ? mediaRecorder.mimeType : 'video/mp4';
+        const isMp4 = mimeType.includes('mp4');
+        const ext = isMp4 ? 'mp4' : 'webm';
+        
+        const blob = new Blob(recordedChunks, { type: mimeType });
+        const fileName = `off_training_${Date.now()}.${ext}`;
+
+        // スマホ（iOS / Android）の共有機能を呼び出し
+        const file = new File([blob], fileName, { type: mimeType });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'オフトレ動画',
+                    text: '撮影したフォーム確認動画です'
+                });
+                return;
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('保存処理エラー:', err);
+                } else {
+                    return; // ユーザーがキャンセルした場合
+                }
+            }
+        }
+
+        // PCブラウザまたは共有非対応時のフォールバック（ファイルダウンロード）
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }
+
     // UI状態切替
     function setState(state) {
         currentState = state;
@@ -421,6 +479,7 @@
             countdownEl.innerText = "";
             camSwitchBtn.disabled = false;
             camSwitchBtn.style.opacity = "1";
+            saveBtn.style.display = "none";
         } else if (state === "WAITING") {
             statusBadge.classList.add("status-waiting");
             statusBadge.innerText = "COUNTDOWN";
@@ -428,6 +487,7 @@
             mainBtn.innerText = "■ キャンセル";
             camSwitchBtn.disabled = true;
             camSwitchBtn.style.opacity = "0.5";
+            saveBtn.style.display = "none";
         } else if (state === "RECORDING") {
             statusBadge.classList.add("status-recording");
             statusBadge.innerText = "● REC";
@@ -435,6 +495,7 @@
             mainBtn.innerText = "■ 停止";
             camSwitchBtn.disabled = true;
             camSwitchBtn.style.opacity = "0.5";
+            saveBtn.style.display = "none";
         } else if (state === "REVIEW") {
             statusBadge.classList.add("status-review");
             statusBadge.innerText = "REVIEW";
@@ -443,6 +504,7 @@
             countdownEl.innerText = "";
             camSwitchBtn.disabled = false;
             camSwitchBtn.style.opacity = "1";
+            saveBtn.style.display = "flex"; // REVIEW時のみ保存ボタンを表示
         }
     }
 
