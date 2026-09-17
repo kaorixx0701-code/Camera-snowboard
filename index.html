@@ -86,7 +86,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">録画時間 (秒)</label>
-          <input type="number" id="settingDuration" value="5" min="1" max="60" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white">
+          <input type="number" id="settingDuration" value="10" min="1" max="60" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white">
         </div>
         <div class="flex items-center justify-between pt-2">
           <label class="text-sm font-medium text-gray-300">撮影完了時に自動保存</label>
@@ -106,7 +106,7 @@
     let recordedBlobUrl = null;
 
     let delaySec = 3;
-    let durationSec = 5;
+    let durationSec = 10; // デフォルト録画時間を10秒に変更
 
     const cameraVideo = document.getElementById('cameraVideo');
     const replayVideo = document.getElementById('replayVideo');
@@ -123,7 +123,6 @@
     const nextBtn = document.getElementById('nextBtn');
     const speedBtns = document.querySelectorAll('.speed-btn');
 
-    // カメラ機能の初期化
     async function initCamera() {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -136,14 +135,13 @@
       }
     }
 
-    // カウントダウン開始
     shutterBtn.addEventListener('click', () => {
       shutterBtn.classList.add('hidden');
       statusBadge.textContent = 'COUNTDOWN';
       statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-yellow-500 shadow-md';
 
       delaySec = parseInt(document.getElementById('settingDelay').value) || 3;
-      durationSec = parseInt(document.getElementById('settingDuration').value) || 5;
+      durationSec = parseInt(document.getElementById('settingDuration').value) || 10;
 
       let count = delaySec;
       if (count > 0) {
@@ -165,12 +163,10 @@
       }
     });
 
-    // 録画制御
     function startRecording() {
       statusBadge.textContent = 'REC';
       statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-red-500 shadow-md animate-pulse';
 
-      // 録画開始の全画面フラッシュ
       flashOverlay.style.opacity = '1';
       setTimeout(() => { flashOverlay.style.opacity = '0'; }, 200);
 
@@ -189,7 +185,6 @@
         }
       }
 
-      // 指定した録画時間後に停止
       setTimeout(() => {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
@@ -199,7 +194,6 @@
       }, durationSec * 1000);
     }
 
-    // 日時ベースのファイル名生成
     function generateFilename() {
       const now = new Date();
       const pad = (n) => String(n).padStart(2, '0');
@@ -207,7 +201,6 @@
       return `offtre_${timeStr}.mp4`;
     }
 
-    // レビュー画面表示
     function showReview() {
       statusBadge.textContent = 'REVIEW';
       statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-blue-500 shadow-md';
@@ -222,26 +215,23 @@
         recordedBlobUrl = URL.createObjectURL(currentBlob);
         replayVideo.src = recordedBlobUrl;
 
-        // 自動保存が有効なら自動実行
         const autoSave = document.getElementById('settingAutoSave').checked;
         if (autoSave) {
           saveVideo();
         }
       }
 
-      replayVideo.playbackRate = 0.5; // 初期スロー再生
+      replayVideo.playbackRate = 0.5;
       replayVideo.play();
       reviewControls.classList.remove('hidden');
     }
 
-    // 動画保存処理（Web Share API 優先 / ダウンロードフォールバック）
     async function saveVideo() {
       if (!currentBlob) return;
 
       const filename = generateFilename();
       const file = new File([currentBlob], filename, { type: currentBlob.type });
 
-      // スマホ（Web Share API 対応）の場合、カメラロール保存メニューを開く
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -255,7 +245,6 @@
         }
       }
 
-      // ブラウザ直接ダウンロード（PCまたはWeb Share未対応時）
       const a = document.createElement('a');
       a.href = recordedBlobUrl;
       a.download = filename;
@@ -264,10 +253,8 @@
       document.body.removeChild(a);
     }
 
-    // 保存ボタンイベント
     saveBtn.addEventListener('click', saveVideo);
 
-    // 再生速度（0.5x / 1.0x / 2.0x）制御
     speedBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         speedBtns.forEach(b => {
@@ -282,7 +269,6 @@
       });
     });
 
-    // 次の撮影へ（待機状態に復帰）
     nextBtn.addEventListener('click', () => {
       replayVideo.pause();
       replayVideo.classList.add('hidden');
@@ -294,11 +280,9 @@
       statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500 shadow-md';
     });
 
-    // 設定ダイアログの表示切替
     settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
     closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
 
-    // カメラ開始
     initCamera();
   </script>
 </body>
