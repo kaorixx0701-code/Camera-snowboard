@@ -14,283 +14,301 @@
         }
 
         body {
-            background-color: #121214;
+            background-color: #000000;
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ヘッダー */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+        }
+
+        .status-badge {
+            font-weight: 700;
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-ready { color: #00e5ff; background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; }
+        .status-waiting { color: #ffd600; background: rgba(255, 214, 0, 0.2); border: 1px solid #ffd600; }
+        .status-recording { color: #ff3b30; background: rgba(255, 59, 48, 0.25); border: 1px solid #ff3b30; animation: pulse 1s infinite; }
+        .status-review { color: #30d158; background: rgba(48, 209, 88, 0.2); border: 1px solid #30d158; }
+
+        @keyframes pulse { 50% { opacity: 0.4; } }
+
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #ffffff;
+            font-size: 20px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            padding: 12px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
         }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 14px;
-        }
-
-        /* 画面表示部 */
-        .screen-wrapper {
+        /* メイン画面表示エリア（全画面活用） */
+        .viewport {
             position: relative;
+            flex: 1;
             width: 100%;
-            aspect-ratio: 4 / 3;
-            background-color: #000000;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: block;
         }
 
-        /* インカメラ表示時のみ左右反転（鏡像） */
-        #liveVideo.mirror {
-            transform: scaleX(-1);
-        }
+        #liveVideo.mirror { transform: scaleX(-1); }
+        #reviewVideo { display: none; }
 
-        #reviewVideo {
-            display: none;
-        }
-
-        /* ステータス・カウントダウン表示 */
-        .overlay {
+        /* カウントダウンデカ文字 overlay */
+        .countdown-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 14px 18px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            font-size: 96px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            pointer-events: none;
             z-index: 10;
         }
 
-        .status-badge {
-            font-weight: 700;
-            font-size: 13px;
-            padding: 6px 14px;
-            border-radius: 20px;
-            letter-spacing: 1px;
-            backdrop-filter: blur(8px);
-        }
-
-        .status-ready { color: #00e5ff; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; }
-        .status-waiting { color: #ffd600; background: rgba(255, 214, 0, 0.15); border: 1px solid #ffd600; }
-        .status-recording { color: #ff3b30; background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; animation: pulse 1s infinite; }
-        .status-review { color: #30d158; background: rgba(48, 209, 88, 0.15); border: 1px solid #30d158; }
-
-        @keyframes pulse {
-            50% { opacity: 0.5; }
-        }
-
-        .countdown-display {
-            font-size: 32px;
-            font-weight: 800;
-            color: #ffffff;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-        }
-
-        /* 操作パネル */
-        .controls-panel {
-            width: 100%;
-            background-color: #1c1c1e;
-            border-radius: 20px;
-            padding: 16px;
+        /* ボトムコントロールバー */
+        .bottom-bar {
+            padding: 20px 24px 34px 24px;
+            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-        }
-
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 10px;
+            z-index: 20;
         }
 
-        .setting-card {
-            background-color: #2c2c2e;
-            border-radius: 14px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .setting-label {
-            font-size: 11px;
-            color: #8e8e93;
-            font-weight: 600;
-        }
-
-        .setting-control {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .btn-adjust {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
+        .btn-main {
+            width: 100%;
+            height: 64px;
             border: none;
-            background-color: #3a3a3c;
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: bold;
+            border-radius: 32px;
+            font-size: 18px;
+            font-weight: 800;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.15s, transform 0.1s;
+            gap: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            transition: transform 0.1s, background-color 0.2s;
         }
 
-        .btn-adjust:active {
-            background-color: #00e5ff;
-            color: #000000;
-            transform: scale(0.92);
+        .btn-main:active { transform: scale(0.96); }
+        .btn-start { background: linear-gradient(135deg, #00e5ff, #0066ff); color: #ffffff; }
+        .btn-cancel { background: #ff3b30; color: #ffffff; }
+
+        /* 設定モーダル */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
-        .setting-value {
+        .modal-content {
+            background: #1c1c1e;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 360px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 18px;
             font-weight: 700;
-            min-width: 36px;
-            text-align: center;
         }
 
-        /* ボタン共通 */
-        .btn-main, .btn-secondary, .btn-save {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
+        .setting-row {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: transform 0.1s, opacity 0.2s;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
 
-        .btn-main:active, .btn-secondary:active, .btn-save:active {
-            transform: scale(0.97);
-        }
+        .setting-label { font-size: 14px; font-weight: 600; color: #d1d1d6; }
 
-        .btn-start {
-            background: linear-gradient(135deg, #00e5ff, #0066ff);
-            color: #ffffff;
-            box-shadow: 0 4px 15px rgba(0, 102, 255, 0.4);
-            font-size: 17px;
-            padding: 16px;
+        .stepper { display: flex; align-items: center; gap: 12px; }
+        .btn-step {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: #2c2c2e; color: #fff; font-size: 18px; font-weight: bold;
+            cursor: pointer;
         }
+        .btn-step:active { background: #00e5ff; color: #000; }
+        .step-val { font-size: 16px; font-weight: 700; min-width: 40px; text-align: center; }
 
-        .btn-cancel {
-            background-color: #ff3b30;
-            color: #ffffff;
-            font-size: 17px;
-            padding: 16px;
+        /* トグルスイッチ */
+        .switch {
+            position: relative; display: inline-block; width: 50px; height: 28px;
         }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #3a3a3c; transition: .3s; border-radius: 28px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #30d158; }
+        input:checked + .slider:before { transform: translateX(22px); }
 
         .btn-secondary {
-            background-color: #2c2c2e;
-            color: #00e5ff;
-            border: 1px solid #3a3a3c;
-        }
-
-        .btn-save {
-            background-color: #30d158;
-            color: #ffffff;
-            font-size: 16px;
-            padding: 14px;
-            display: none; /* REVIEW時のみ表示 */
-            box-shadow: 0 4px 15px rgba(48, 209, 88, 0.3);
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #3a3a3c;
+            background: #2c2c2e; color: #00e5ff; font-weight: 700; font-size: 14px; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <!-- カメラ / リプレイ表示領域 -->
-    <div class="screen-wrapper">
-        <div class="overlay">
-            <div id="statusBadge" class="status-badge status-ready">READY</div>
-            <div id="countdown" class="countdown-display"></div>
-        </div>
-        <video id="liveVideo" autoplay playsinline muted></video>
-        <video id="reviewVideo" playsinline controls></video>
+    <!-- ヘッダー（ステータス ＆ 設定ボタンのみ） -->
+    <div class="header">
+        <div id="statusBadge" class="status-badge status-ready">READY</div>
+        <button class="btn-icon" onclick="openModal()">⚙</button>
     </div>
 
-    <!-- コントロール部 -->
-    <div class="controls-panel">
-        <!-- 秒数設定 -->
-        <div class="settings-grid">
-            <div class="setting-card">
-                <span class="setting-label">準備ディレイ</span>
-                <div class="setting-control">
-                    <button class="btn-adjust" onclick="adjustDelay(-1)">-</button>
-                    <span id="delayVal" class="setting-value">3秒</span>
-                    <button class="btn-adjust" onclick="adjustDelay(1)">+</button>
-                </div>
-            </div>
-            <div class="setting-card">
-                <span class="setting-label">録画時間</span>
-                <div class="setting-control">
-                    <button class="btn-adjust" onclick="adjustRecord(-1)">-</button>
-                    <span id="recordVal" class="setting-value">10秒</span>
-                    <button class="btn-adjust" onclick="adjustRecord(1)">+</button>
-                </div>
-            </div>
-        </div>
+    <!-- メインビューポート -->
+    <div class="viewport">
+        <div id="countdown" class="countdown-overlay"></div>
+        <video id="liveVideo" autoplay playsinline muted></video>
+        <video id="reviewVideo" playsinline controls loop></video>
+    </div>
 
-        <!-- カメラ切替ボタン -->
-        <button id="camSwitchBtn" class="btn-secondary" onclick="toggleCamera()">
-            🔄 カメラ切替 (現在: アウトカメラ)
-        </button>
-
-        <!-- 動画保存ボタン（撮影後のみ出現） -->
-        <button id="saveBtn" class="btn-save" onclick="saveVideo()">
-            💾 動画を保存 (カメラロールへ)
-        </button>
-
-        <!-- スタート/キャンセル ボタン -->
+    <!-- ボトム操作バー（スタートボタンのみの極太シンプルUI） -->
+    <div class="bottom-bar">
         <button id="mainBtn" class="btn-main btn-start" onclick="handleMainAction()">
             ▶ 撮影スタート
         </button>
     </div>
-</div>
+
+    <!-- 設定モーダル（普段は隠れている） -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>撮影設定</span>
+                <button class="btn-icon" style="width:32px; height:32px; font-size:16px;" onclick="closeModal()">✕</button>
+            </div>
+
+            <!-- 準備ディレイ -->
+            <div class="setting-row">
+                <span class="setting-label">準備ディレイ</span>
+                <div class="stepper">
+                    <button class="btn-step" onclick="adjustSetting('delay', -1)">-</button>
+                    <span id="delayVal" class="step-val">3秒</span>
+                    <button class="btn-step" onclick="adjustSetting('delay', 1)">+</button>
+                </div>
+            </div>
+
+            <!-- 録画時間 -->
+            <div class="setting-row">
+                <span class="setting-label">録画時間</span>
+                <div class="stepper">
+                    <button class="btn-step" onclick="adjustSetting('record', -1)">-</button>
+                    <span id="recordVal" class="step-val">10秒</span>
+                    <button class="btn-step" onclick="adjustSetting('record', 1)">+</button>
+                </div>
+            </div>
+
+            <!-- 自動保存トグル -->
+            <div class="setting-row">
+                <span class="setting-label">撮影後に自動保存</span>
+                <label class="switch">
+                    <input type="checkbox" id="autoSaveToggle" onchange="toggleAutoSave(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- カメラ切替 -->
+            <button id="camSwitchBtn" class="btn-secondary" onclick="toggleCamera()">
+                🔄 カメラ切替 (現在: アウト)
+            </button>
+        </div>
+    </div>
 
 <script>
-    let delaySeconds = 3;
-    let recordSeconds = 10;
-    let currentFacingMode = "environment"; // 初期表示を「environment」(外カメラ) に設定
-    
-    let currentState = "READY"; // READY, WAITING, RECORDING, REVIEW
+    // 設定パラメータ（デフォルト ＆ LocalStorageからの復元）
+    let delaySeconds = parseInt(localStorage.getItem('offcam_delay') || '3');
+    let recordSeconds = parseInt(localStorage.getItem('offcam_record') || '10');
+    let autoSave = localStorage.getItem('offcam_autosave') === 'true';
+    let currentFacingMode = "environment"; // 外カメラスタート固定
+
+    let currentState = "READY"; 
     let mediaRecorder = null;
     let recordedChunks = [];
     let timerInterval = null;
+    let wakeLock = null;
 
     const liveVideo = document.getElementById('liveVideo');
     const reviewVideo = document.getElementById('reviewVideo');
     const statusBadge = document.getElementById('statusBadge');
     const countdownEl = document.getElementById('countdown');
     const mainBtn = document.getElementById('mainBtn');
-    const camSwitchBtn = document.getElementById('camSwitchBtn');
-    const saveBtn = document.getElementById('saveBtn');
+    const modal = document.getElementById('settingsModal');
 
-    // カメラ起動・切り替え処理
+    // 初期表示の反映
+    document.getElementById('delayVal').innerText = delaySeconds + "秒";
+    document.getElementById('recordVal').innerText = recordSeconds + "秒";
+    document.getElementById('autoSaveToggle').checked = autoSave;
+
+    // スリープ防止（Wake Lock API）
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) { console.log(err); }
+    }
+
+    // カメラ初期化
     async function initCamera() {
         if (liveVideo.srcObject) {
             liveVideo.srcObject.getTracks().forEach(track => track.stop());
@@ -303,40 +321,22 @@
             });
             liveVideo.srcObject = stream;
 
+            const camBtn = document.getElementById('camSwitchBtn');
             if (currentFacingMode === "user") {
                 liveVideo.classList.add('mirror');
-                camSwitchBtn.innerText = "🔄 カメラ切替 (現在: インカメラ)";
+                camBtn.innerText = "🔄 カメラ切替 (現在: イン)";
             } else {
                 liveVideo.classList.remove('mirror');
-                camSwitchBtn.innerText = "🔄 カメラ切替 (現在: アウトカメラ)";
+                camBtn.innerText = "🔄 カメラ切替 (現在: アウト)";
             }
         } catch (err) {
             alert("カメラの起動に失敗しました: " + err.message);
         }
     }
 
-    // カメラ切り替え（イン ↔ アウト）
-    async function toggleCamera() {
-        if (currentState !== "READY" && currentState !== "REVIEW") return;
-        currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
-        await initCamera();
-    }
-
-    // 秒数調整
-    function adjustDelay(delta) {
-        if (currentState !== "READY" && currentState !== "REVIEW") return;
-        delaySeconds = Math.max(0, delaySeconds + delta);
-        document.getElementById('delayVal').innerText = delaySeconds + "秒";
-    }
-
-    function adjustRecord(delta) {
-        if (currentState !== "READY" && currentState !== "REVIEW") return;
-        recordSeconds = Math.max(1, recordSeconds + delta);
-        document.getElementById('recordVal').innerText = recordSeconds + "秒";
-    }
-
-    // ボタンタップ時の処理
+    // メインアクション（撮影スタート / キャンセル）
     function handleMainAction() {
+        requestWakeLock();
         if (currentState === "READY" || currentState === "REVIEW") {
             startProcess();
         } else {
@@ -344,7 +344,6 @@
         }
     }
 
-    // 一連の撮影プロセス開始
     function startProcess() {
         reviewVideo.pause();
         reviewVideo.style.display = "none";
@@ -353,7 +352,7 @@
         if (delaySeconds > 0) {
             setState("WAITING");
             let count = delaySeconds;
-            countdownEl.innerText = count + "s";
+            countdownEl.innerText = count;
 
             timerInterval = setInterval(() => {
                 count--;
@@ -362,7 +361,7 @@
                     countdownEl.innerText = "";
                     startRecording();
                 } else {
-                    countdownEl.innerText = count + "s";
+                    countdownEl.innerText = count;
                 }
             }, 1000);
         } else {
@@ -370,27 +369,19 @@
         }
     }
 
-    // 録画開始
     function startRecording() {
         setState("RECORDING");
         recordedChunks = [];
-        
         const stream = liveVideo.srcObject;
-        if (!stream) return;
 
         let mimeType = 'video/mp4';
         if (!MediaRecorder.isTypeSupported(mimeType)) {
             mimeType = 'video/webm;codecs=vp9';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                mimeType = 'video/webm';
-            }
+            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
         }
 
         mediaRecorder = new MediaRecorder(stream, { mimeType });
-
-        mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) recordedChunks.push(e.data);
-        };
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
 
         mediaRecorder.onstop = () => {
             const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
@@ -399,14 +390,20 @@
             reviewVideo.src = videoURL;
             liveVideo.style.display = "none";
             reviewVideo.style.display = "block";
+            reviewVideo.play();
             
             setState("REVIEW");
+
+            // 自動保存フラグがONなら即時保存実行
+            if (autoSave) {
+                executeSave(blob, mediaRecorder.mimeType);
+            }
         };
 
         mediaRecorder.start();
 
         let count = recordSeconds;
-        countdownEl.innerText = count + "s";
+        countdownEl.innerText = count;
 
         timerInterval = setInterval(() => {
             count--;
@@ -417,54 +414,35 @@
                     mediaRecorder.stop();
                 }
             } else {
-                countdownEl.innerText = count + "s";
+                countdownEl.innerText = count;
             }
         }, 1000);
     }
 
-    // 動画保存・カメラロールへの書き出し処理
-    async function saveVideo() {
-        if (!recordedChunks || recordedChunks.length === 0) return;
-
-        const mimeType = mediaRecorder ? mediaRecorder.mimeType : 'video/mp4';
-        const isMp4 = mimeType.includes('mp4');
-        const ext = isMp4 ? 'mp4' : 'webm';
-        
-        const blob = new Blob(recordedChunks, { type: mimeType });
+    // 保存実行処理
+    async function executeSave(blob, mimeType) {
+        const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
         const fileName = `off_training_${Date.now()}.${ext}`;
-
         const file = new File([blob], fileName, { type: mimeType });
+
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
-                await navigator.share({
-                    files: [file],
-                    title: 'オフトレ動画',
-                    text: '撮影したフォーム確認動画です'
-                });
+                await navigator.share({ files: [file] });
                 return;
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error('保存処理エラー:', err);
-                } else {
-                    return;
-                }
-            }
+            } catch (err) { if (err.name === 'AbortError') return; }
         }
 
+        // 共有機能が使えない場合の自動ダウンロード処理
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.style.display = 'none';
         a.href = url;
         a.download = fileName;
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
     }
 
-    // UI状態切替
+    // 状態更新
     function setState(state) {
         currentState = state;
         statusBadge.className = "status-badge";
@@ -475,52 +453,61 @@
             mainBtn.className = "btn-main btn-start";
             mainBtn.innerText = "▶ 撮影スタート";
             countdownEl.innerText = "";
-            camSwitchBtn.disabled = false;
-            camSwitchBtn.style.opacity = "1";
-            saveBtn.style.display = "none";
         } else if (state === "WAITING") {
             statusBadge.classList.add("status-waiting");
             statusBadge.innerText = "COUNTDOWN";
             mainBtn.className = "btn-main btn-cancel";
             mainBtn.innerText = "■ キャンセル";
-            camSwitchBtn.disabled = true;
-            camSwitchBtn.style.opacity = "0.5";
-            saveBtn.style.display = "none";
         } else if (state === "RECORDING") {
             statusBadge.classList.add("status-recording");
             statusBadge.innerText = "● REC";
             mainBtn.className = "btn-main btn-cancel";
             mainBtn.innerText = "■ 停止";
-            camSwitchBtn.disabled = true;
-            camSwitchBtn.style.opacity = "0.5";
-            saveBtn.style.display = "none";
         } else if (state === "REVIEW") {
             statusBadge.classList.add("status-review");
             statusBadge.innerText = "REVIEW";
             mainBtn.className = "btn-main btn-start";
             mainBtn.innerText = "🔄 もう一度撮影";
             countdownEl.innerText = "";
-            camSwitchBtn.disabled = false;
-            camSwitchBtn.style.opacity = "1";
-            saveBtn.style.display = "flex";
         }
     }
 
-    // キャンセル・リセット
     function resetToReady() {
         if (timerInterval) clearInterval(timerInterval);
-        if (mediaRecorder && mediaRecorder.state === "recording") {
-            mediaRecorder.stop();
-        }
+        if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
         reviewVideo.pause();
         reviewVideo.style.display = "none";
         liveVideo.style.display = "block";
         setState("READY");
     }
 
-    // 初期化
+    // モーダル・設定制御
+    function openModal() { if (currentState === "READY" || currentState === "REVIEW") modal.style.display = "flex"; }
+    function closeModal() { modal.style.display = "none"; }
+
+    function adjustSetting(type, delta) {
+        if (type === 'delay') {
+            delaySeconds = Math.max(0, delaySeconds + delta);
+            document.getElementById('delayVal').innerText = delaySeconds + "秒";
+            localStorage.setItem('offcam_delay', delaySeconds);
+        } else if (type === 'record') {
+            recordSeconds = Math.max(1, recordSeconds + delta);
+            document.getElementById('recordVal').innerText = recordSeconds + "秒";
+            localStorage.setItem('offcam_record', recordSeconds);
+        }
+    }
+
+    function toggleAutoSave(val) {
+        autoSave = val;
+        localStorage.setItem('offcam_autosave', autoSave);
+    }
+
+    async function toggleCamera() {
+        currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
+        await initCamera();
+    }
+
     window.addEventListener('DOMContentLoaded', initCamera);
 </script>
-
 </body>
 </html>
