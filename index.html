@@ -1,227 +1,277 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stylish Video Replay Player</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #090d16;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .player-card {
-      position: relative;
-      width: 90%;
-      max-width: 720px;
-      border-radius: 20px;
-      overflow: hidden;
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-    }
-    .video-wrapper {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
-    }
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-    }
-    /* 中央リプレイオーバーレイボタン */
-    .overlay-btn {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.9);
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: rgba(15, 23, 42, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
-    }
-    .overlay-btn.visible {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translate(-50%, -50%) scale(1);
-    }
-    .overlay-btn:hover {
-      transform: translate(-50%, -50%) scale(1.1);
-      background: rgba(99, 102, 241, 0.85);
-      box-shadow: 0 0 40px rgba(99, 102, 241, 0.7);
-    }
-    /* コントロールバー */
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 16px 20px;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
-    }
-    .btn {
-      background: none;
-      border: none;
-      color: #e2e8f0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      transition: background 0.2s, color 0.2s;
-    }
-    .btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: #fff;
-    }
-    .progress-container {
-      flex: 1;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 3px;
-      cursor: pointer;
-      position: relative;
-    }
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #6366f1, #a855f7);
-      border-radius: 3px;
-      transition: width 0.1s linear;
-    }
-    .time-display {
-      color: #94a3b8;
-      font-size: 13px;
-      font-variant-numeric: tabular-nums;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>オフトレカメラ Pro</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            /* 100vhのフォールバック + モバイル対応の100dvh */
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        /* ヘッダー */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+            background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+        }
+
+        .status-badge {
+            font-weight: 800;
+            font-size: 14px;
+            padding: 8px 18px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-ready { color: #00e5ff; background: rgba(0, 229, 255, 0.2); border: 1.5px solid #00e5ff; }
+        .status-waiting { color: #ffd600; background: rgba(255, 214, 0, 0.2); border: 1.5px solid #ffd600; }
+        .status-recording { color: #ff3b30; background: rgba(255, 59, 48, 0.25); border: 1.5px solid #ff3b30; animation: pulse 1s infinite; }
+        .status-review { color: #30d158; background: rgba(48, 209, 88, 0.2); border: 1.5px solid #30d158; }
+
+        @keyframes pulse { 50% { opacity: 0.4; } }
+
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        /* メインビューポート */
+        .viewport {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #liveVideo.mirror { transform: scaleX(-1); }
+        #reviewVideo { display: none; }
+
+        /* カウントダウン */
+        .countdown-overlay {
+            position: absolute;
+            font-size: 140px; /* さらに少し大きく */
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 4px 30px rgba(0,0,0,1);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 録画開始時のフラッシュエフェクト */
+        .flash-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ffffff;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-out;
+        }
+        .flash-overlay.active {
+            opacity: 1;
+            transition: none; /* 光るときは一瞬 */
+        }
+
+        /* 動画中央の再生オーバーレイボタン */
+        .play-overlay-btn {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(0, 229, 255, 0.85);
+            border: none;
+            color: #000;
+            font-size: 36px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 15;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
+            cursor: pointer;
+        }
+
+        /* ボトムコントロールバー */
+        .bottom-bar {
+            padding: 16px 16px 28px 16px;
+            background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            gap: 12px;
+            z-index: 20;
+        }
+
+        /* 超大型メインボタン */
+        .btn-main {
+            flex: 1;
+            height: 80px;
+            border: none;
+            border-radius: 20px;
+            font-size: 22px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .btn-main:active { transform: scale(0.95); }
+        .btn-start { background: linear-gradient(135deg, #00e5ff, #0066ff); color: #ffffff; }
+        .btn-cancel { background: #ff3b30; color: #ffffff; }
+        .btn-play { background: #30d158; color: #ffffff; }
+        .btn-next { background: #3a3a3c; color: #00e5ff; border: 2px solid #00e5ff; }
+
+        /* 設定モーダル */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #1c1c1e;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 360px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .setting-label { font-size: 15px; font-weight: 600; color: #d1d1d6; }
+
+        .stepper { display: flex; align-items: center; gap: 12px; }
+        .btn-step {
+            width: 44px; height: 44px; border-radius: 50%; border: none;
+            background: #2c2c2e; color: #fff; font-size: 22px; font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-step:active { background: #00e5ff; color: #000; }
+        .step-val { font-size: 18px; font-weight: 700; min-width: 48px; text-align: center; }
+
+        .switch { position: relative; display: inline-block; width: 54px; height: 30px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #3a3a3c; transition: .3s; border-radius: 30px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 24px; width: 24px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #30d158; }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        .btn-secondary {
+            width: 100%; padding: 16px; border-radius: 16px; border: 1px solid #3a3a3c;
+            background: #2c2c2e; color: #00e5ff; font-weight: 700; font-size: 16px; cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-  <div class="player-card">
-    <div class="video-wrapper">
-      <video id="videoPlayer" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"></video>
-      <button class="overlay-btn" id="overlayBtn" title="もう一度再生">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21.5 2v6h-6"></path>
-          <path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-        </svg>
-      </button>
+
+    <!-- ヘッダー -->
+    <div class="header">
+        <div id="statusBadge" class="status-badge status-ready">READY</div>
+        <button class="btn-icon" onclick="openModal()">⚙</button>
     </div>
-    <div class="controls">
-      <button class="btn" id="playBtn" title="再生/一時停止">
-        <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="5,3 19,12 5,21"></polygon>
-        </svg>
-      </button>
-      <button class="btn" id="replayBtn" title="最初からリプレイ">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M1 4v6h6"></path>
-          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-        </svg>
-      </button>
-      <div class="progress-container" id="progressContainer">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-      <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+
+    <!-- メインビューポート -->
+    <div class="viewport">
+        <div id="flashOverlay" class="flash-overlay"></div>
+        <div id="countdown" class="countdown-overlay"></div>
+        <button id="playOverlayBtn" class="play-overlay-btn" onclick="togglePlayReview()">▶</button>
+        
+        <video id="liveVideo" autoplay playsinline muted></video>
+        <!-- controlsを追加しつつ、タップでの再生/停止も可能にする -->
+        <video id="reviewVideo" playsinline controls></video>
     </div>
-  </div>
 
-  <script>
-    const video = document.getElementById('videoPlayer');
-    const playBtn = document.getElementById('playBtn');
-    const replayBtn = document.getElementById('replayBtn');
-    const overlayBtn = document.getElementById('overlayBtn');
-    const playIcon = document.getElementById('playIcon');
-    const progressBar = document.getElementById('progressBar');
-    const progressContainer = document.getElementById('progressContainer');
-    const timeDisplay = document.getElementById('timeDisplay');
+    <!-- ボトム操作バー -->
+    <div class="bottom-bar" id="bottomBar">
+        <button id="mainBtn" class="btn-main btn-start" onclick="handleMainAction()">
+            ▶ 撮影スタート
+        </button>
+    </div>
 
-    const PLAY_SVG = '<polygon points="5,3 19,12 5,21"></polygon>';
-    const PAUSE_SVG = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+    <!-- 設定モーダル -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                該当するコードが現在のプロンプトに含まれていないため、批評や修正を行うことができません。
 
-    // リプレイ処理（再生位置クリア＋Promise対応）
-    function replay() {
-      video.currentTime = 0;
-      video.play().then(() => {
-        updatePlayState(true);
-        overlayBtn.classList.remove('visible');
-      }).catch(err => {
-        console.error('再生失敗:', err);
-      });
-    }
-
-    function togglePlay() {
-      if (video.ended) {
-        replay();
-        return;
-      }
-      if (video.paused) {
-        video.play().then(() => updatePlayState(true)).catch(console.error);
-      } else {
-        video.pause();
-        updatePlayState(false);
-      }
-    }
-
-    function updatePlayState(isPlaying) {
-      playIcon.innerHTML = isPlaying ? PAUSE_SVG : PLAY_SVG;
-      if (isPlaying) overlayBtn.classList.remove('visible');
-    }
-
-    function formatTime(seconds) {
-      const m = Math.floor(seconds / 60);
-      const s = Math.floor(seconds % 60);
-      return `${m}:${s < 10 ? '0' : ''}${s}`;
-    }
-
-    playBtn.addEventListener('click', togglePlay);
-    replayBtn.addEventListener('click', replay);
-    overlayBtn.addEventListener('click', replay);
-
-    video.addEventListener('timeupdate', () => {
-      if (video.duration) {
-        const pct = (video.currentTime / video.duration) * 100;
-        progressBar.style.width = `${pct}%`;
-        timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
-      }
-    });
-
-    // 動画終了時イベントの監視
-    video.addEventListener('ended', () => {
-      updatePlayState(false);
-      overlayBtn.classList.add('visible');
-    });
-
-    progressContainer.addEventListener('click', (e) => {
-      const rect = progressContainer.getBoundingClientRect();
-      const pos = (e.clientX - rect.left) / rect.width;
-      video.currentTime = pos * video.duration;
-    });
-  </script>
-</body>
-</html>
+お手数ですが、対象となるコードをこちらに貼り付けていただけますでしょうか？コードを確認次第、直ちにレビューと改善案の作成を行います。
