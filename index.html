@@ -52,8 +52,8 @@
             display: block;
         }
 
-        /* 撮影中は自撮り用に鏡像反転 */
-        #liveVideo {
+        /* インカメラ表示時のみ左右反転（鏡像） */
+        #liveVideo.mirror {
             transform: scaleX(-1);
         }
 
@@ -108,7 +108,7 @@
             padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.4);
         }
 
@@ -169,13 +169,13 @@
             text-align: center;
         }
 
-        /* アクションボタン */
-        .btn-main {
+        /* ボタン共通 */
+        .btn-main, .btn-secondary {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             border: none;
             border-radius: 14px;
-            font-size: 17px;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
             display: flex;
@@ -185,7 +185,7 @@
             transition: transform 0.1s, opacity 0.2s;
         }
 
-        .btn-main:active {
+        .btn-main:active, .btn-secondary:active {
             transform: scale(0.97);
         }
 
@@ -193,11 +193,21 @@
             background: linear-gradient(135deg, #00e5ff, #0066ff);
             color: #ffffff;
             box-shadow: 0 4px 15px rgba(0, 102, 255, 0.4);
+            font-size: 17px;
+            padding: 16px;
         }
 
         .btn-cancel {
             background-color: #ff3b30;
             color: #ffffff;
+            font-size: 17px;
+            padding: 16px;
+        }
+
+        .btn-secondary {
+            background-color: #2c2c2e;
+            color: #00e5ff;
+            border: 1px solid #3a3a3c;
         }
     </style>
 </head>
@@ -210,7 +220,7 @@
             <div id="statusBadge" class="status-badge status-ready">READY</div>
             <div id="countdown" class="countdown-display"></div>
         </div>
-        <video id="liveVideo" autoplay playsinline muted></video>
+        <video id="liveVideo" class="mirror" autoplay playsinline muted></video>
         <video id="reviewVideo" playsinline controls></video>
     </div>
 
@@ -236,6 +246,11 @@
             </div>
         </div>
 
+        <!-- カメラ切替ボタン -->
+        <button id="camSwitchBtn" class="btn-secondary" onclick="toggleCamera()">
+            🔄 カメラ切替 (現在: インカメラ)
+        </button>
+
         <!-- スタート/キャンセル ボタン -->
         <button id="mainBtn" class="btn-main btn-start" onclick="handleMainAction()">
             ▶ 撮影スタート
@@ -246,6 +261,7 @@
 <script>
     let delaySeconds = 3;
     let recordSeconds = 10;
+    let currentFacingMode = "user"; // "user" (インカメラ) または "environment" (アウトカメラ)
     
     let currentState = "READY"; // READY, WAITING, RECORDING, REVIEW
     let mediaRecorder = null;
@@ -257,18 +273,40 @@
     const statusBadge = document.getElementById('statusBadge');
     const countdownEl = document.getElementById('countdown');
     const mainBtn = document.getElementById('mainBtn');
+    const camSwitchBtn = document.getElementById('camSwitchBtn');
 
-    // カメラ起動処理
+    // カメラ起動・切り替え処理
     async function initCamera() {
+        // 既存のストリームがあれば停止
+        if (liveVideo.srcObject) {
+            liveVideo.srcObject.getTracks().forEach(track => track.stop());
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+                video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
                 audio: false
             });
             liveVideo.srcObject = stream;
+
+            // インカメラの時だけ左右反転（鏡像）にする
+            if (currentFacingMode === "user") {
+                liveVideo.classList.add('mirror');
+                camSwitchBtn.innerText = "🔄 カメラ切替 (現在: インカメラ)";
+            } else {
+                liveVideo.classList.remove('mirror');
+                camSwitchBtn.innerText = "🔄 カメラ切替 (現在: アウトカメラ)";
+            }
         } catch (err) {
-            alert("カメラの利用を許可してください: " + err.message);
+            alert("カメラの起動に失敗しました: " + err.message);
         }
+    }
+
+    // カメラ切り替え（イン ↔ アウト）
+    async function toggleCamera() {
+        if (currentState !== "READY" && currentState !== "REVIEW") return;
+        currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
+        await initCamera();
     }
 
     // 秒数調整
@@ -381,22 +419,30 @@
             mainBtn.className = "btn-main btn-start";
             mainBtn.innerText = "▶ 撮影スタート";
             countdownEl.innerText = "";
+            camSwitchBtn.disabled = false;
+            camSwitchBtn.style.opacity = "1";
         } else if (state === "WAITING") {
             statusBadge.classList.add("status-waiting");
             statusBadge.innerText = "COUNTDOWN";
             mainBtn.className = "btn-main btn-cancel";
             mainBtn.innerText = "■ キャンセル";
+            camSwitchBtn.disabled = true;
+            camSwitchBtn.style.opacity = "0.5";
         } else if (state === "RECORDING") {
             statusBadge.classList.add("status-recording");
             statusBadge.innerText = "● REC";
             mainBtn.className = "btn-main btn-cancel";
             mainBtn.innerText = "■ 停止";
+            camSwitchBtn.disabled = true;
+            camSwitchBtn.style.opacity = "0.5";
         } else if (state === "REVIEW") {
             statusBadge.classList.add("status-review");
             statusBadge.innerText = "REVIEW";
             mainBtn.className = "btn-main btn-start";
             mainBtn.innerText = "🔄 もう一度撮影";
             countdownEl.innerText = "";
+            camSwitchBtn.disabled = false;
+            camSwitchBtn.style.opacity = "1";
         }
     }
 
