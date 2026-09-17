@@ -55,16 +55,21 @@
 
   <!-- 4. リプレイコントロールバー (撮影後に表示) -->
   <div id="reviewControls" class="absolute bottom-0 left-0 w-full bg-black/85 backdrop-blur-md p-6 flex flex-col gap-4 z-20 hidden">
+    <!-- 上段: 倍速切り替え -->
     <div class="flex justify-between items-center">
-      <!-- 倍速切り替え (0.5x / 1.0x / 2.0x) -->
       <div class="flex bg-gray-800 rounded-lg p-1 border border-white/10">
         <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md bg-blue-600 text-white" data-speed="0.5">0.5x</button>
         <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md text-gray-400" data-speed="1.0">1.0x</button>
         <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md text-gray-400" data-speed="2.0">2.0x</button>
       </div>
+    </div>
 
-      <!-- 次の撮影へボタン -->
-      <button id="nextBtn" class="flex items-center gap-2 px-6 py-3 bg-blue-600 active:bg-blue-700 font-bold rounded-full shadow-lg shadow-blue-900/40 text-white">
+    <!-- 下段: アクションボタン（保存 / 次の撮影へ） -->
+    <div class="flex gap-3">
+      <button id="saveBtn" class="flex-1 py-3 bg-emerald-600 active:bg-emerald-700 font-bold rounded-full shadow-lg text-white flex items-center justify-center gap-2">
+        💾 端末に保存
+      </button>
+      <button id="nextBtn" class="flex-1 py-3 bg-blue-600 active:bg-blue-700 font-bold rounded-full shadow-lg text-white flex items-center justify-center gap-2">
         🔄 次の撮影へ
       </button>
     </div>
@@ -83,6 +88,10 @@
           <label class="block text-sm font-medium text-gray-300 mb-2">録画時間 (秒)</label>
           <input type="number" id="settingDuration" value="5" min="1" max="60" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white">
         </div>
+        <div class="flex items-center justify-between pt-2">
+          <label class="text-sm font-medium text-gray-300">撮影完了時に自動保存</label>
+          <input type="checkbox" id="settingAutoSave" class="w-5 h-5 accent-blue-600 rounded">
+        </div>
       </div>
       <button id="closeSettingsBtn" class="w-full py-3 bg-blue-600 font-bold rounded-xl text-white">保存して閉じる</button>
     </div>
@@ -93,6 +102,7 @@
     let mediaStream = null;
     let mediaRecorder = null;
     let recordedChunks = [];
+    let currentBlob = null;
     let recordedBlobUrl = null;
 
     let delaySec = 3;
@@ -109,6 +119,7 @@
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsModal = document.getElementById('settingsModal');
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const saveBtn = document.getElementById('saveBtn');
     const nextBtn = document.getElementById('nextBtn');
     const speedBtns = document.querySelectorAll('.speed-btn');
 
@@ -166,14 +177,15 @@
       recordedChunks = [];
       if (mediaStream) {
         try {
-          mediaRecorder = new MediaRecorder(mediaStream);
+          const mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
+          mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
           mediaRecorder.ondataavailable = (e) => {
             if (e.data.size > 0) recordedChunks.push(e.data);
           };
           mediaRecorder.onstop = showReview;
           mediaRecorder.start();
         } catch (err) {
-          console.warn('MediaRecorder非対応:', err);
+          console.warn('MediaRecorder開始エラー:', err);
         }
       }
 
@@ -187,7 +199,15 @@
       }, durationSec * 1000);
     }
 
-    // レビュー画面表示（録画結果のループ・倍速再生）
+    // 日時ベースのファイル名生成
+    function generateFilename() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const timeStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      return `offtre_${timeStr}.mp4`;
+    }
+
+    // レビュー画面表示
     function showReview() {
       statusBadge.textContent = 'REVIEW';
       statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-blue-500 shadow-md';
@@ -196,18 +216,56 @@
       replayVideo.classList.remove('hidden');
 
       if (recordedChunks.length > 0) {
-        const blob = new Blob(recordedChunks, { type: 'video/mp4' });
+        const mimeType = recordedChunks[0].type || 'video/mp4';
+        currentBlob = new Blob(recordedChunks, { type: mimeType });
         if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
-        recordedBlobUrl = URL.createObjectURL(blob);
+        recordedBlobUrl = URL.createObjectURL(currentBlob);
         replayVideo.src = recordedBlobUrl;
-      } else {
-        replayVideo.srcObject = mediaStream;
+
+        // 自動保存が有効なら自動実行
+        const autoSave = document.getElementById('settingAutoSave').checked;
+        if (autoSave) {
+          saveVideo();
+        }
       }
 
       replayVideo.playbackRate = 0.5; // 初期スロー再生
       replayVideo.play();
       reviewControls.classList.remove('hidden');
     }
+
+    // 動画保存処理（Web Share API 優先 / ダウンロードフォールバック）
+    async function saveVideo() {
+      if (!currentBlob) return;
+
+      const filename = generateFilename();
+      const file = new File([currentBlob], filename, { type: currentBlob.type });
+
+      // スマホ（Web Share API 対応）の場合、カメラロール保存メニューを開く
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'オフトレ撮影動画',
+            text: 'オフトレカメラ Pro で撮影した動画です'
+          });
+          return;
+        } catch (err) {
+          if (err.name !== 'AbortError') console.log('Web Share失敗、直接ダウンロードします');
+        }
+      }
+
+      // ブラウザ直接ダウンロード（PCまたはWeb Share未対応時）
+      const a = document.createElement('a');
+      a.href = recordedBlobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // 保存ボタンイベント
+    saveBtn.addEventListener('click', saveVideo);
 
     // 再生速度（0.5x / 1.0x / 2.0x）制御
     speedBtns.forEach(btn => {
