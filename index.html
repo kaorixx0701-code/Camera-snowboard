@@ -1,277 +1,247 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>オフトレカメラ Pro</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            /* 100vhのフォールバック + モバイル対応の100dvh */
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
-        }
-
-        /* ヘッダー */
-        .header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 20;
-            background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
-        }
-
-        .status-badge {
-            font-weight: 800;
-            font-size: 14px;
-            padding: 8px 18px;
-            border-radius: 20px;
-            letter-spacing: 1px;
-            backdrop-filter: blur(10px);
-        }
-
-        .status-ready { color: #00e5ff; background: rgba(0, 229, 255, 0.2); border: 1.5px solid #00e5ff; }
-        .status-waiting { color: #ffd600; background: rgba(255, 214, 0, 0.2); border: 1.5px solid #ffd600; }
-        .status-recording { color: #ff3b30; background: rgba(255, 59, 48, 0.25); border: 1.5px solid #ff3b30; animation: pulse 1s infinite; }
-        .status-review { color: #30d158; background: rgba(48, 209, 88, 0.2); border: 1.5px solid #30d158; }
-
-        @keyframes pulse { 50% { opacity: 0.4; } }
-
-        .btn-icon {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: #ffffff;
-            font-size: 24px;
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-        }
-
-        /* メインビューポート */
-        .viewport {
-            position: relative;
-            flex: 1;
-            width: 100%;
-            background-color: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        #liveVideo.mirror { transform: scaleX(-1); }
-        #reviewVideo { display: none; }
-
-        /* カウントダウン */
-        .countdown-overlay {
-            position: absolute;
-            font-size: 140px; /* さらに少し大きく */
-            font-weight: 900;
-            color: #ffffff;
-            text-shadow: 0 4px 30px rgba(0,0,0,1);
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        /* 録画開始時のフラッシュエフェクト */
-        .flash-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ffffff;
-            z-index: 50;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease-out;
-        }
-        .flash-overlay.active {
-            opacity: 1;
-            transition: none; /* 光るときは一瞬 */
-        }
-
-        /* 動画中央の再生オーバーレイボタン */
-        .play-overlay-btn {
-            position: absolute;
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: rgba(0, 229, 255, 0.85);
-            border: none;
-            color: #000;
-            font-size: 36px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 15;
-            box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
-            cursor: pointer;
-        }
-
-        /* ボトムコントロールバー */
-        .bottom-bar {
-            padding: 16px 16px 28px 16px;
-            background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            gap: 12px;
-            z-index: 20;
-        }
-
-        /* 超大型メインボタン */
-        .btn-main {
-            flex: 1;
-            height: 80px;
-            border: none;
-            border-radius: 20px;
-            font-size: 22px;
-            font-weight: 900;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-            transition: transform 0.1s, background-color 0.2s;
-        }
-
-        .btn-main:active { transform: scale(0.95); }
-        .btn-start { background: linear-gradient(135deg, #00e5ff, #0066ff); color: #ffffff; }
-        .btn-cancel { background: #ff3b30; color: #ffffff; }
-        .btn-play { background: #30d158; color: #ffffff; }
-        .btn-next { background: #3a3a3c; color: #00e5ff; border: 2px solid #00e5ff; }
-
-        /* 設定モーダル */
-        .modal {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(12px);
-            z-index: 100;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: #1c1c1e;
-            border-radius: 24px;
-            width: 100%;
-            max-width: 360px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .setting-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .setting-label { font-size: 15px; font-weight: 600; color: #d1d1d6; }
-
-        .stepper { display: flex; align-items: center; gap: 12px; }
-        .btn-step {
-            width: 44px; height: 44px; border-radius: 50%; border: none;
-            background: #2c2c2e; color: #fff; font-size: 22px; font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-step:active { background: #00e5ff; color: #000; }
-        .step-val { font-size: 18px; font-weight: 700; min-width: 48px; text-align: center; }
-
-        .switch { position: relative; display: inline-block; width: 54px; height: 30px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #3a3a3c; transition: .3s; border-radius: 30px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 24px; width: 24px; left: 3px; bottom: 3px;
-            background-color: white; transition: .3s; border-radius: 50%;
-        }
-        input:checked + .slider { background-color: #30d158; }
-        input:checked + .slider:before { transform: translateX(24px); }
-
-        .btn-secondary {
-            width: 100%; padding: 16px; border-radius: 16px; border: 1px solid #3a3a3c;
-            background: #2c2c2e; color: #00e5ff; font-weight: 700; font-size: 16px; cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>オフトレカメラ Pro</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      height: 100dvh;
+      touch-action: manipulation;
+    }
+  </style>
 </head>
-<body>
+<body class="bg-black text-white flex flex-col overflow-hidden font-sans select-none">
 
-    <!-- ヘッダー -->
-    <div class="header">
-        <div id="statusBadge" class="status-badge status-ready">READY</div>
-        <button class="btn-icon" onclick="openModal()">⚙</button>
+  <!-- 1. ヘッダーバー (ステータス & 設定ボタン) -->
+  <header class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20 pointer-events-none">
+    <div id="statusBadge" class="px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500 shadow-md">
+      READY
     </div>
+    <button id="settingsBtn" class="p-2.5 bg-black/60 rounded-full pointer-events-auto border border-white/20 active:scale-95 transition">
+      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+      </svg>
+    </button>
+  </header>
 
-    <!-- メインビューポート -->
-    <div class="viewport">
-        <div id="flashOverlay" class="flash-overlay"></div>
-        <div id="countdown" class="countdown-overlay"></div>
-        <button id="playOverlayBtn" class="play-overlay-btn" onclick="togglePlayReview()">▶</button>
-        
-        <video id="liveVideo" autoplay playsinline muted></video>
-        <!-- controlsを追加しつつ、タップでの再生/停止も可能にする -->
-        <video id="reviewVideo" playsinline controls></video>
+  <!-- 2. 上部巨大シャッターボタン (高さ90px / 三脚転倒防止) -->
+  <button id="shutterBtn" class="absolute top-0 left-0 w-full h-[90px] bg-red-600 active:bg-red-700 flex items-center justify-center z-10 transition-colors shadow-xl">
+    <span class="text-2xl font-black tracking-widest text-white drop-shadow-md">
+      TAP TO RECORD
+    </span>
+  </button>
+
+  <!-- 3. メインビューポート -->
+  <div class="flex-1 w-full h-full relative flex items-center justify-center bg-gray-900 overflow-hidden">
+    <!-- カメラライブ映像 -->
+    <video id="cameraVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
+    <!-- 録画した動画のリプレイビュー -->
+    <video id="replayVideo" playsinline loop class="w-full h-full object-cover hidden"></video>
+
+    <!-- 録画開始フラッシュ演出 -->
+    <div id="flashOverlay" class="absolute inset-0 bg-white z-50 pointer-events-none opacity-0 transition-opacity duration-150"></div>
+
+    <!-- 巨大カウントダウン表示 -->
+    <div id="countdownOverlay" class="absolute inset-0 flex items-center justify-center z-30 hidden pointer-events-none">
+      <span id="countdownText" class="text-[140px] font-black text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.9)]">
+        3
+      </span>
     </div>
+  </div>
 
-    <!-- ボトム操作バー -->
-    <div class="bottom-bar" id="bottomBar">
-        <button id="mainBtn" class="btn-main btn-start" onclick="handleMainAction()">
-            ▶ 撮影スタート
-        </button>
+  <!-- 4. リプレイコントロールバー (撮影後に表示) -->
+  <div id="reviewControls" class="absolute bottom-0 left-0 w-full bg-black/85 backdrop-blur-md p-6 flex flex-col gap-4 z-20 hidden">
+    <div class="flex justify-between items-center">
+      <!-- 倍速切り替え (0.5x / 1.0x / 2.0x) -->
+      <div class="flex bg-gray-800 rounded-lg p-1 border border-white/10">
+        <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md bg-blue-600 text-white" data-speed="0.5">0.5x</button>
+        <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md text-gray-400" data-speed="1.0">1.0x</button>
+        <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md text-gray-400" data-speed="2.0">2.0x</button>
+      </div>
+
+      <!-- 次の撮影へボタン -->
+      <button id="nextBtn" class="flex items-center gap-2 px-6 py-3 bg-blue-600 active:bg-blue-700 font-bold rounded-full shadow-lg shadow-blue-900/40 text-white">
+        🔄 次の撮影へ
+      </button>
     </div>
+  </div>
 
-    <!-- 設定モーダル -->
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                該当するコードが現在のプロンプトに含まれていないため、批評や修正を行うことができません。
+  <!-- 5. 設定モーダル -->
+  <div id="settingsModal" class="absolute inset-0 bg-black/80 backdrop-blur-md z-40 flex items-center justify-center p-6 hidden">
+    <div class="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-6">
+      <h3 class="text-xl font-bold border-b border-white/10 pb-3">撮影設定</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">準備タイマー (秒)</label>
+          <input type="number" id="settingDelay" value="3" min="0" max="10" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">録画時間 (秒)</label>
+          <input type="number" id="settingDuration" value="5" min="1" max="60" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white">
+        </div>
+      </div>
+      <button id="closeSettingsBtn" class="w-full py-3 bg-blue-600 font-bold rounded-xl text-white">保存して閉じる</button>
+    </div>
+  </div>
 
-お手数ですが、対象となるコードをこちらに貼り付けていただけますでしょうか？コードを確認次第、直ちにレビューと改善案の作成を行います。
+  <!-- アプリケーションロジック -->
+  <script>
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordedBlobUrl = null;
+
+    let delaySec = 3;
+    let durationSec = 5;
+
+    const cameraVideo = document.getElementById('cameraVideo');
+    const replayVideo = document.getElementById('replayVideo');
+    const shutterBtn = document.getElementById('shutterBtn');
+    const statusBadge = document.getElementById('statusBadge');
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const countdownText = document.getElementById('countdownText');
+    const flashOverlay = document.getElementById('flashOverlay');
+    const reviewControls = document.getElementById('reviewControls');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const speedBtns = document.querySelectorAll('.speed-btn');
+
+    // カメラ機能の初期化
+    async function initCamera() {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+          audio: false
+        });
+        cameraVideo.srcObject = mediaStream;
+      } catch (e) {
+        console.warn('カメラへのアクセス許可が必要です:', e);
+      }
+    }
+
+    // カウントダウン開始
+    shutterBtn.addEventListener('click', () => {
+      shutterBtn.classList.add('hidden');
+      statusBadge.textContent = 'COUNTDOWN';
+      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-yellow-500 shadow-md';
+
+      delaySec = parseInt(document.getElementById('settingDelay').value) || 3;
+      durationSec = parseInt(document.getElementById('settingDuration').value) || 5;
+
+      let count = delaySec;
+      if (count > 0) {
+        countdownOverlay.classList.remove('hidden');
+        countdownText.textContent = count;
+
+        const timer = setInterval(() => {
+          count--;
+          if (count > 0) {
+            countdownText.textContent = count;
+          } else {
+            clearInterval(timer);
+            countdownOverlay.classList.add('hidden');
+            startRecording();
+          }
+        }, 1000);
+      } else {
+        startRecording();
+      }
+    });
+
+    // 録画制御
+    function startRecording() {
+      statusBadge.textContent = 'REC';
+      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-red-500 shadow-md animate-pulse';
+
+      // 録画開始の全画面フラッシュ
+      flashOverlay.style.opacity = '1';
+      setTimeout(() => { flashOverlay.style.opacity = '0'; }, 200);
+
+      recordedChunks = [];
+      if (mediaStream) {
+        try {
+          mediaRecorder = new MediaRecorder(mediaStream);
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+          };
+          mediaRecorder.onstop = showReview;
+          mediaRecorder.start();
+        } catch (err) {
+          console.warn('MediaRecorder非対応:', err);
+        }
+      }
+
+      // 指定した録画時間後に停止
+      setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        } else {
+          showReview();
+        }
+      }, durationSec * 1000);
+    }
+
+    // レビュー画面表示（録画結果のループ・倍速再生）
+    function showReview() {
+      statusBadge.textContent = 'REVIEW';
+      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-blue-500 shadow-md';
+
+      cameraVideo.classList.add('hidden');
+      replayVideo.classList.remove('hidden');
+
+      if (recordedChunks.length > 0) {
+        const blob = new Blob(recordedChunks, { type: 'video/mp4' });
+        if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
+        recordedBlobUrl = URL.createObjectURL(blob);
+        replayVideo.src = recordedBlobUrl;
+      } else {
+        replayVideo.srcObject = mediaStream;
+      }
+
+      replayVideo.playbackRate = 0.5; // 初期スロー再生
+      replayVideo.play();
+      reviewControls.classList.remove('hidden');
+    }
+
+    // 再生速度（0.5x / 1.0x / 2.0x）制御
+    speedBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        speedBtns.forEach(b => {
+          b.classList.remove('bg-blue-600', 'text-white');
+          b.classList.add('text-gray-400');
+        });
+        btn.classList.add('bg-blue-600', 'text-white');
+        btn.classList.remove('text-gray-400');
+
+        const speed = parseFloat(btn.dataset.speed);
+        replayVideo.playbackRate = speed;
+      });
+    });
+
+    // 次の撮影へ（待機状態に復帰）
+    nextBtn.addEventListener('click', () => {
+      replayVideo.pause();
+      replayVideo.classList.add('hidden');
+      cameraVideo.classList.remove('hidden');
+      reviewControls.classList.add('hidden');
+      shutterBtn.classList.remove('hidden');
+
+      statusBadge.textContent = 'READY';
+      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500 shadow-md';
+    });
+
+    // 設定ダイアログの表示切替
+    settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+    closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+    // カメラ開始
+    initCamera();
+  </script>
+</body>
+</html>
