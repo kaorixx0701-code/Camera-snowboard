@@ -229,7 +229,7 @@
             <div id="statusBadge" class="status-badge status-ready">READY</div>
             <div id="countdown" class="countdown-display"></div>
         </div>
-        <video id="liveVideo" class="mirror" autoplay playsinline muted></video>
+        <video id="liveVideo" autoplay playsinline muted></video>
         <video id="reviewVideo" playsinline controls></video>
     </div>
 
@@ -257,7 +257,7 @@
 
         <!-- カメラ切替ボタン -->
         <button id="camSwitchBtn" class="btn-secondary" onclick="toggleCamera()">
-            🔄 カメラ切替 (現在: インカメラ)
+            🔄 カメラ切替 (現在: アウトカメラ)
         </button>
 
         <!-- 動画保存ボタン（撮影後のみ出現） -->
@@ -275,7 +275,7 @@
 <script>
     let delaySeconds = 3;
     let recordSeconds = 10;
-    let currentFacingMode = "user"; // "user" (インカメラ) または "environment" (アウトカメラ)
+    let currentFacingMode = "environment"; // 初期表示を「environment」(外カメラ) に設定
     
     let currentState = "READY"; // READY, WAITING, RECORDING, REVIEW
     let mediaRecorder = null;
@@ -433,7 +433,6 @@
         const blob = new Blob(recordedChunks, { type: mimeType });
         const fileName = `off_training_${Date.now()}.${ext}`;
 
-        // スマホ（iOS / Android）の共有機能を呼び出し
         const file = new File([blob], fileName, { type: mimeType });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
@@ -447,12 +446,11 @@
                 if (err.name !== 'AbortError') {
                     console.error('保存処理エラー:', err);
                 } else {
-                    return; // ユーザーがキャンセルした場合
+                    return;
                 }
             }
         }
 
-        // PCブラウザまたは共有非対応時のフォールバック（ファイルダウンロード）
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.style.display = 'none';
@@ -504,7 +502,7 @@
             countdownEl.innerText = "";
             camSwitchBtn.disabled = false;
             camSwitchBtn.style.opacity = "1";
-            saveBtn.style.display = "flex"; // REVIEW時のみ保存ボタンを表示
+            saveBtn.style.display = "flex";
         }
     }
 
