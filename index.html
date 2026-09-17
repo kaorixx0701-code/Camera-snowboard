@@ -23,33 +23,37 @@
             overflow: hidden;
         }
 
-        /* ヘッダー */
-        .header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 16px 20px;
+        /* 画面上部：メイン操作ゾーン（地面設置時もタップしやすい） */
+        .top-panel {
+            width: 100%;
+            background: #121214;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 30;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 20;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
         }
 
         .status-badge {
-            font-weight: 700;
-            font-size: 12px;
-            padding: 6px 14px;
+            font-weight: 800;
+            font-size: 13px;
+            padding: 6px 16px;
             border-radius: 20px;
             letter-spacing: 1px;
-            backdrop-filter: blur(10px);
         }
 
-        .status-ready { color: #00e5ff; background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; }
-        .status-waiting { color: #ffd600; background: rgba(255, 214, 0, 0.2); border: 1px solid #ffd600; }
-        .status-recording { color: #ff3b30; background: rgba(255, 59, 48, 0.25); border: 1px solid #ff3b30; animation: pulse 1s infinite; }
-        .status-review { color: #30d158; background: rgba(48, 209, 88, 0.2); border: 1px solid #30d158; }
+        .status-ready { color: #00e5ff; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; }
+        .status-waiting { color: #ffd600; background: rgba(255, 214, 0, 0.15); border: 1px solid #ffd600; }
+        .status-recording { color: #ff3b30; background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; animation: pulse 1s infinite; }
+        .status-review { color: #30d158; background: rgba(48, 209, 88, 0.15); border: 1px solid #30d158; }
 
         @keyframes pulse { 50% { opacity: 0.4; } }
 
@@ -65,10 +69,30 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            backdrop-filter: blur(10px);
         }
 
-        /* メイン画面表示エリア（全画面活用） */
+        /* 超巨大スタートボタン（上部に配置） */
+        .btn-main {
+            width: 100%;
+            height: 72px;
+            border: none;
+            border-radius: 20px;
+            font-size: 20px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+
+        .btn-main:active { transform: scale(0.97); }
+        .btn-start { background: linear-gradient(135deg, #00e5ff, #0066ff); color: #ffffff; }
+        .btn-cancel { background: #ff3b30; color: #ffffff; }
+
+        /* 下部：映像表示エリア */
         .viewport {
             position: relative;
             flex: 1;
@@ -77,6 +101,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
 
         video {
@@ -88,56 +113,42 @@
         #liveVideo.mirror { transform: scaleX(-1); }
         #reviewVideo { display: none; }
 
-        /* カウントダウンデカ文字 overlay */
+        /* カウントダウン表示 */
         .countdown-overlay {
             position: absolute;
-            font-size: 96px;
+            font-size: 110px;
             font-weight: 900;
             color: #ffffff;
-            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            text-shadow: 0 4px 20px rgba(0,0,0,0.9);
             pointer-events: none;
             z-index: 10;
         }
 
-        /* ボトムコントロールバー */
-        .bottom-bar {
-            padding: 20px 24px 34px 24px;
-            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+        /* 手動リプレイ再生用のオーバーレイボタン */
+        .play-overlay-btn {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
             z-index: 20;
-        }
-
-        .btn-main {
-            width: 100%;
-            height: 64px;
+            background: rgba(0, 229, 255, 0.9);
+            color: #000000;
+            padding: 18px 36px;
+            border-radius: 40px;
+            font-size: 20px;
+            font-weight: 900;
             border: none;
-            border-radius: 32px;
-            font-size: 18px;
-            font-weight: 800;
             cursor: pointer;
-            display: flex;
+            box-shadow: 0 10px 30px rgba(0,229,255,0.4);
+            display: none; /* REVIEW時のみ必要に応じて表示 */
             align-items: center;
-            justify-content: center;
             gap: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-            transition: transform 0.1s, background-color 0.2s;
         }
 
-        .btn-main:active { transform: scale(0.96); }
-        .btn-start { background: linear-gradient(135deg, #00e5ff, #0066ff); color: #ffffff; }
-        .btn-cancel { background: #ff3b30; color: #ffffff; }
+        .play-overlay-btn:active { transform: scale(0.95); }
 
         /* 設定モーダル */
         .modal {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.75);
             backdrop-filter: blur(12px);
             z-index: 100;
             display: none;
@@ -155,7 +166,6 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
             border: 1px solid rgba(255,255,255,0.1);
         }
 
@@ -176,20 +186,15 @@
         }
 
         .setting-label { font-size: 14px; font-weight: 600; color: #d1d1d6; }
-
         .stepper { display: flex; align-items: center; gap: 12px; }
         .btn-step {
             width: 36px; height: 36px; border-radius: 50%; border: none;
             background: #2c2c2e; color: #fff; font-size: 18px; font-weight: bold;
             cursor: pointer;
         }
-        .btn-step:active { background: #00e5ff; color: #000; }
         .step-val { font-size: 16px; font-weight: 700; min-width: 40px; text-align: center; }
 
-        /* トグルスイッチ */
-        .switch {
-            position: relative; display: inline-block; width: 50px; height: 28px;
-        }
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
@@ -210,27 +215,31 @@
 </head>
 <body>
 
-    <!-- ヘッダー（ステータス ＆ 設定ボタンのみ） -->
-    <div class="header">
-        <div id="statusBadge" class="status-badge status-ready">READY</div>
-        <button class="btn-icon" onclick="openModal()">⚙</button>
-    </div>
-
-    <!-- メインビューポート -->
-    <div class="viewport">
-        <div id="countdown" class="countdown-overlay"></div>
-        <video id="liveVideo" autoplay playsinline muted></video>
-        <video id="reviewVideo" playsinline controls loop></video>
-    </div>
-
-    <!-- ボトム操作バー（スタートボタンのみの極太シンプルUI） -->
-    <div class="bottom-bar">
+    <!-- 上部：メイン操作エリア（最優先タップエリア） -->
+    <div class="top-panel">
+        <div class="header-row">
+            <div id="statusBadge" class="status-badge status-ready">READY</div>
+            <button class="btn-icon" onclick="openModal()">⚙</button>
+        </div>
+        
         <button id="mainBtn" class="btn-main btn-start" onclick="handleMainAction()">
             ▶ 撮影スタート
         </button>
     </div>
 
-    <!-- 設定モーダル（普段は隠れている） -->
+    <!-- 下部：映像エリア -->
+    <div class="viewport">
+        <div id="countdown" class="countdown-overlay"></div>
+        <video id="liveVideo" autoplay playsinline muted></video>
+        <video id="reviewVideo" playsinline controls loop></video>
+
+        <!-- 手動再生スタート用ボタン（画面中央） -->
+        <button id="playOverlayBtn" class="play-overlay-btn" onclick="startReplay()">
+            ▶ リプレイ再生
+        </button>
+    </div>
+
+    <!-- 設定モーダル -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -238,7 +247,6 @@
                 <button class="btn-icon" style="width:32px; height:32px; font-size:16px;" onclick="closeModal()">✕</button>
             </div>
 
-            <!-- 準備ディレイ -->
             <div class="setting-row">
                 <span class="setting-label">準備ディレイ</span>
                 <div class="stepper">
@@ -248,7 +256,6 @@
                 </div>
             </div>
 
-            <!-- 録画時間 -->
             <div class="setting-row">
                 <span class="setting-label">録画時間</span>
                 <div class="stepper">
@@ -258,7 +265,6 @@
                 </div>
             </div>
 
-            <!-- 自動保存トグル -->
             <div class="setting-row">
                 <span class="setting-label">撮影後に自動保存</span>
                 <label class="switch">
@@ -267,7 +273,6 @@
                 </label>
             </div>
 
-            <!-- カメラ切替 -->
             <button id="camSwitchBtn" class="btn-secondary" onclick="toggleCamera()">
                 🔄 カメラ切替 (現在: アウト)
             </button>
@@ -275,11 +280,10 @@
     </div>
 
 <script>
-    // 設定パラメータ（デフォルト ＆ LocalStorageからの復元）
     let delaySeconds = parseInt(localStorage.getItem('offcam_delay') || '3');
     let recordSeconds = parseInt(localStorage.getItem('offcam_record') || '10');
     let autoSave = localStorage.getItem('offcam_autosave') === 'true';
-    let currentFacingMode = "environment"; // 外カメラスタート固定
+    let currentFacingMode = "environment"; // 外カメラ固定
 
     let currentState = "READY"; 
     let mediaRecorder = null;
@@ -292,23 +296,19 @@
     const statusBadge = document.getElementById('statusBadge');
     const countdownEl = document.getElementById('countdown');
     const mainBtn = document.getElementById('mainBtn');
+    const playOverlayBtn = document.getElementById('playOverlayBtn');
     const modal = document.getElementById('settingsModal');
 
-    // 初期表示の反映
     document.getElementById('delayVal').innerText = delaySeconds + "秒";
     document.getElementById('recordVal').innerText = recordSeconds + "秒";
     document.getElementById('autoSaveToggle').checked = autoSave;
 
-    // スリープ防止（Wake Lock API）
     async function requestWakeLock() {
         try {
-            if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-            }
+            if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
         } catch (err) { console.log(err); }
     }
 
-    // カメラ初期化
     async function initCamera() {
         if (liveVideo.srcObject) {
             liveVideo.srcObject.getTracks().forEach(track => track.stop());
@@ -334,7 +334,6 @@
         }
     }
 
-    // メインアクション（撮影スタート / キャンセル）
     function handleMainAction() {
         requestWakeLock();
         if (currentState === "READY" || currentState === "REVIEW") {
@@ -347,6 +346,7 @@
     function startProcess() {
         reviewVideo.pause();
         reviewVideo.style.display = "none";
+        playOverlayBtn.style.display = "none";
         liveVideo.style.display = "block";
 
         if (delaySeconds > 0) {
@@ -390,11 +390,14 @@
             reviewVideo.src = videoURL;
             liveVideo.style.display = "none";
             reviewVideo.style.display = "block";
-            reviewVideo.play();
+            
+            // 自動再生せず一時停止で待機＆中央に再生ボタンを表示
+            reviewVideo.currentTime = 0;
+            reviewVideo.pause();
+            playOverlayBtn.style.display = "flex";
             
             setState("REVIEW");
 
-            // 自動保存フラグがONなら即時保存実行
             if (autoSave) {
                 executeSave(blob, mediaRecorder.mimeType);
             }
@@ -419,7 +422,12 @@
         }, 1000);
     }
 
-    // 保存実行処理
+    // 手動でリプレイ再生を開始
+    function startReplay() {
+        playOverlayBtn.style.display = "none";
+        reviewVideo.play();
+    }
+
     async function executeSave(blob, mimeType) {
         const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
         const fileName = `off_training_${Date.now()}.${ext}`;
@@ -432,7 +440,6 @@
             } catch (err) { if (err.name === 'AbortError') return; }
         }
 
-        // 共有機能が使えない場合の自動ダウンロード処理
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -442,7 +449,6 @@
         setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
     }
 
-    // 状態更新
     function setState(state) {
         currentState = state;
         statusBadge.className = "status-badge";
@@ -453,6 +459,7 @@
             mainBtn.className = "btn-main btn-start";
             mainBtn.innerText = "▶ 撮影スタート";
             countdownEl.innerText = "";
+            playOverlayBtn.style.display = "none";
         } else if (state === "WAITING") {
             statusBadge.classList.add("status-waiting");
             statusBadge.innerText = "COUNTDOWN";
@@ -477,11 +484,11 @@
         if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
         reviewVideo.pause();
         reviewVideo.style.display = "none";
+        playOverlayBtn.style.display = "none";
         liveVideo.style.display = "block";
         setState("READY");
     }
 
-    // モーダル・設定制御
     function openModal() { if (currentState === "READY" || currentState === "REVIEW") modal.style.display = "flex"; }
     function closeModal() { modal.style.display = "none"; }
 
