@@ -49,13 +49,38 @@
     <div id="replayContainer" class="absolute inset-0 w-full h-full flex items-center justify-center bg-black hidden z-10">
       <video id="replayVideo" playsinline loop class="w-full h-full object-cover"></video>
       <!-- 手動再生用オーバレイボタン -->
-      <button id="playOverlayBtn" class="absolute inset-0 flex items-center justify-center bg-black/40 z-20 hidden">
-        <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition">
-          <svg class="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+      <button id="playOverlayBtn" class="absolute inset-0 flex items-center justify-center bg-black/40 z-25 hidden">
+        <div class="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition">
+          <svg class="w-12 h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z"/>
           </svg>
         </div>
       </button>
+    </div>
+
+    <!-- 4. リプレイコントロールバー (押しやすい中央～上寄りのフローティング配置) -->
+    <div id="reviewControls" class="absolute bottom-12 left-4 right-4 max-w-md mx-auto bg-gray-900/90 border border-white/15 backdrop-blur-md p-4 rounded-2xl flex flex-col gap-3 z-30 shadow-2xl hidden">
+      <!-- 倍速切り替え & 再生/停止 -->
+      <div class="flex justify-between items-center">
+        <div class="flex bg-gray-800 rounded-lg p-1 border border-white/10">
+          <button class="speed-btn px-3 py-1.5 text-xs font-bold rounded-md bg-blue-600 text-white" data-speed="0.5">0.5x</button>
+          <button class="speed-btn px-3 py-1.5 text-xs font-bold rounded-md text-gray-400" data-speed="1.0">1.0x</button>
+          <button class="speed-btn px-3 py-1.5 text-xs font-bold rounded-md text-gray-400" data-speed="2.0">2.0x</button>
+        </div>
+        <button id="togglePlayBtn" class="px-4 py-2 bg-gray-800 active:bg-gray-700 border border-white/10 rounded-lg font-bold text-xs text-white">
+          ⏸️ 一時停止
+        </button>
+      </div>
+
+      <!-- アクションボタン -->
+      <div class="flex gap-2">
+        <button id="saveBtn" class="flex-1 py-3 bg-emerald-600 active:bg-emerald-700 font-bold rounded-xl shadow-lg text-sm text-white flex items-center justify-center gap-2">
+          💾 保存
+        </button>
+        <button id="nextBtn" class="flex-1 py-3 bg-blue-600 active:bg-blue-700 font-bold rounded-xl shadow-lg text-sm text-white flex items-center justify-center gap-2">
+          🔄 次の撮影へ
+        </button>
+      </div>
     </div>
 
     <!-- 録画開始フラッシュ演出 -->
@@ -66,31 +91,6 @@
       <span id="countdownText" class="text-[140px] font-black text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.9)]">
         3
       </span>
-    </div>
-  </div>
-
-  <!-- 4. リプレイコントロールバー -->
-  <div id="reviewControls" class="absolute bottom-0 left-0 w-full bg-black/85 backdrop-blur-md p-6 flex flex-col gap-4 z-30 hidden">
-    <!-- 倍速切り替え & 再生/停止 -->
-    <div class="flex justify-between items-center">
-      <div class="flex bg-gray-800 rounded-lg p-1 border border-white/10">
-        <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md bg-blue-600 text-white" data-speed="0.5">0.5x</button>
-        <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md text-gray-400" data-speed="1.0">1.0x</button>
-        <button class="speed-btn px-4 py-2 text-sm font-bold rounded-md text-gray-400" data-speed="2.0">2.0x</button>
-      </div>
-      <button id="togglePlayBtn" class="px-5 py-2 bg-gray-700 active:bg-gray-600 rounded-lg font-bold text-sm text-white">
-        ⏸️ 一時停止
-      </button>
-    </div>
-
-    <!-- アクションボタン -->
-    <div class="flex gap-3">
-      <button id="saveBtn" class="flex-1 py-3 bg-emerald-600 active:bg-emerald-700 font-bold rounded-full shadow-lg text-white flex items-center justify-center gap-2">
-        💾 端末に保存
-      </button>
-      <button id="nextBtn" class="flex-1 py-3 bg-blue-600 active:bg-blue-700 font-bold rounded-full shadow-lg text-white flex items-center justify-center gap-2">
-        🔄 次の撮影へ
-      </button>
     </div>
   </div>
 
