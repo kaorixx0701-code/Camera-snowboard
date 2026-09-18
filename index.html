@@ -16,7 +16,7 @@
 <body class="bg-black text-white flex flex-col overflow-hidden font-sans select-none">
 
   <!-- 1. ヘッダーバー (ステータス & 設定ボタン) -->
-  <header class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-20 pointer-events-none">
+  <header class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-25 pointer-events-none">
     <div id="statusBadge" class="px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500 shadow-md">
       READY
     </div>
@@ -49,7 +49,7 @@
     <div id="replayContainer" class="absolute inset-0 w-full h-full flex items-center justify-center bg-black hidden z-10">
       <video id="replayVideo" playsinline loop class="w-full h-full object-cover"></video>
       <!-- 手動再生用オーバレイボタン -->
-      <button id="playOverlayBtn" class="absolute inset-0 flex items-center justify-center bg-black/40 z-25 hidden">
+      <button id="playOverlayBtn" class="absolute inset-0 flex items-center justify-center bg-black/40 z-20 hidden">
         <div class="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition">
           <svg class="w-12 h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z"/>
@@ -58,8 +58,8 @@
       </button>
     </div>
 
-    <!-- 4. リプレイコントロールバー (押しやすい中央～上寄りのフローティング配置) -->
-    <div id="reviewControls" class="absolute bottom-12 left-4 right-4 max-w-md mx-auto bg-gray-900/90 border border-white/15 backdrop-blur-md p-4 rounded-2xl flex flex-col gap-3 z-30 shadow-2xl hidden">
+    <!-- 4. リプレイコントロールバー (画面上部～中央寄りにしっかり配置) -->
+    <div id="reviewControls" class="absolute top-24 left-4 right-4 max-w-sm mx-auto bg-gray-900/90 border border-white/20 backdrop-blur-md p-4 rounded-2xl flex flex-col gap-3 z-30 shadow-2xl hidden">
       <!-- 倍速切り替え & 再生/停止 -->
       <div class="flex justify-between items-center">
         <div class="flex bg-gray-800 rounded-lg p-1 border border-white/10">
