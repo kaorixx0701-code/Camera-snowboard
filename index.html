@@ -15,8 +15,8 @@
 </head>
 <body class="bg-black text-white flex flex-col overflow-hidden font-sans select-none">
 
-  <!-- 1. ヘッダーバー (ステータス & 設定ボタン) ※常に最前面(z-40)に配置 -->
-  <header class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-40 pointer-events-none">
+  <!-- 1. ヘッダーバー (ステータス & 設定ボタン) -->
+  <header class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-50 pointer-events-none">
     <div id="statusBadge" class="px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500 shadow-md">
       READY
     </div>
@@ -25,7 +25,6 @@
         ☀️ ロック防止: OFF
       </button>
       <button id="settingsBtn" class="p-2.5 bg-black/60 rounded-full border border-white/20 active:scale-95 transition shadow-md">
-        <!-- 歯車アイコン -->
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -34,8 +33,8 @@
     </div>
   </header>
 
-  <!-- 2. 上部巨大シャッターボタン (設定ボタンに被らないよう top-16 に少し下げる) -->
-  <button id="shutterBtn" class="absolute top-16 left-0 w-full h-[90px] bg-red-600 active:bg-red-700 flex items-center justify-center z-30 transition-colors shadow-xl border-y border-white/20">
+  <!-- 2. 上部巨大シャッターボタン -->
+  <button id="shutterBtn" class="absolute top-16 left-0 w-full h-[100px] bg-red-600 active:bg-red-700 flex items-center justify-center z-30 transition-colors shadow-xl border-y border-white/20">
     <span class="text-2xl font-black tracking-widest text-white drop-shadow-md">
       TAP TO RECORD
     </span>
@@ -49,19 +48,26 @@
     <!-- 録画した動画のリプレイビュー -->
     <div id="replayContainer" class="absolute inset-0 w-full h-full flex items-center justify-center bg-black hidden z-10">
       <video id="replayVideo" playsinline loop class="w-full h-full object-cover"></video>
-      <!-- 手動再生用オーバレイボタン -->
-      <button id="playOverlayBtn" class="absolute inset-0 flex items-center justify-center bg-black/40 z-20 hidden">
-        <div class="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition">
-          <svg class="w-12 h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </div>
-      </button>
     </div>
 
-    <!-- 4. リプレイコントロールバー (シャッターボタンと同じ top-16 位置に配置) -->
+    <!-- 4. ハイクアップ待機・省電力スリープ画面 (録画終了後自動アクティブ) -->
+    <button id="sleepOverlay" class="absolute inset-0 bg-black z-40 flex flex-col items-center justify-center hidden active:bg-gray-950 transition-colors">
+      <div class="text-center p-6 space-y-3 pointer-events-none">
+        <div class="w-16 h-16 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-2 border border-blue-500/30 animate-pulse">
+          😴
+        </div>
+        <p class="text-lg font-bold text-white">撮影完了・待機中</p>
+        <p class="text-xs text-gray-400">ハイクアップお疲れ様です！<br>タップすると0.5倍スローでリプレイ再生します</p>
+        <div class="pt-4">
+          <span class="inline-block px-6 py-3 bg-blue-600 text-white font-bold text-sm rounded-full shadow-lg">
+            画面をタップして動画を確認
+          </span>
+        </div>
+      </div>
+    </button>
+
+    <!-- 5. リプレイコントロールバー (復帰後に表示) -->
     <div id="reviewControls" class="absolute top-16 left-4 right-4 max-w-md mx-auto bg-gray-900/90 border border-white/20 backdrop-blur-md p-4 rounded-2xl flex flex-col gap-3 z-30 shadow-2xl hidden">
-      <!-- 倍速切り替え & 再生/停止 -->
       <div class="flex justify-between items-center">
         <div class="flex bg-gray-800 rounded-lg p-1 border border-white/10">
           <button class="speed-btn px-3 py-1.5 text-xs font-bold rounded-md bg-blue-600 text-white" data-speed="0.5">0.5x</button>
@@ -73,13 +79,13 @@
         </button>
       </div>
 
-      <!-- アクションボタン -->
+      <!-- 保存・破棄 アクションボタン -->
       <div class="flex gap-2">
-        <button id="saveBtn" class="flex-1 py-3 bg-emerald-600 active:bg-emerald-700 font-bold rounded-xl shadow-lg text-sm text-white flex items-center justify-center gap-2">
-          💾 保存
+        <button id="discardBtn" class="flex-1 py-3.5 bg-gray-700 active:bg-gray-800 font-bold rounded-xl shadow-lg text-sm text-gray-200 flex items-center justify-center gap-1 border border-white/10">
+          🗑️ 破棄して次へ
         </button>
-        <button id="nextBtn" class="flex-1 py-3 bg-blue-600 active:bg-blue-700 font-bold rounded-xl shadow-lg text-sm text-white flex items-center justify-center gap-2">
-          🔄 次の撮影へ
+        <button id="saveBtn" class="flex-1 py-3.5 bg-emerald-600 active:bg-emerald-700 font-bold rounded-xl shadow-lg text-sm text-white flex items-center justify-center gap-1">
+          💾 保存して次へ
         </button>
       </div>
     </div>
@@ -95,34 +101,33 @@
     </div>
   </div>
 
-  <!-- 5. 設定モーダル (最前面 z-50 に設定) -->
+  <!-- 6. 設定モーダル -->
   <div id="settingsModal" class="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-6 hidden">
-    <div class="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-5">
+    <div class="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-5 max-h-[90vh] overflow-y-auto">
       <h3 class="text-xl font-bold border-b border-white/10 pb-3">撮影・動作設定</h3>
       
       <div class="space-y-4 text-sm">
         <div>
           <label class="block font-medium text-gray-300 mb-1">準備タイマー (秒)</label>
-          <input type="number" id="settingDelay" value="3" min="0" max="10" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white">
+          <input type="number" id="settingDelay" value="5" min="0" max="30" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white">
         </div>
         <div>
           <label class="block font-medium text-gray-300 mb-1">録画時間 (秒)</label>
           <input type="number" id="settingDuration" value="10" min="1" max="60" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white">
         </div>
+        <div>
+          <label class="block font-medium text-gray-300 mb-1">画質モード</label>
+          <select id="settingQuality" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white">
+            <option value="1080" selected>1080p (Full HD - 推奨)</option>
+            <option value="720">720p (HD - 最強省電力)</option>
+          </select>
+        </div>
         
         <hr class="border-white/10">
 
         <div class="flex items-center justify-between">
-          <label class="font-medium text-gray-300">リプレイの自動再生</label>
-          <input type="checkbox" id="settingAutoPlay" class="w-5 h-5 accent-blue-600 rounded">
-        </div>
-        <div class="flex items-center justify-between">
-          <label class="font-medium text-gray-300">撮影完了時に自動保存</label>
-          <input type="checkbox" id="settingAutoSave" class="w-5 h-5 accent-blue-600 rounded">
-        </div>
-        <div class="flex items-center justify-between">
           <label class="font-medium text-gray-300">カウントダウン音・ビープ音</label>
-          <input type="checkbox" id="settingSound" class="w-5 h-5 accent-blue-600 rounded">
+          <input type="checkbox" id="settingSound" class="w-5 h-5 accent-blue-600 rounded" checked>
         </div>
         <div class="flex items-center justify-between">
           <label class="font-medium text-gray-300">マイク音声も録音する</label>
@@ -134,7 +139,7 @@
         </div>
       </div>
 
-      <button id="closeSettingsBtn" class="w-full py-3 bg-blue-600 active:bg-blue-700 font-bold rounded-xl text-white pt-2 shadow-lg">設定を保存して閉じる</button>
+      <button id="closeSettingsBtn" class="w-full py-3 bg-blue-600 active:bg-blue-700 font-bold rounded-xl text-white shadow-lg">設定を保存して閉じる</button>
     </div>
   </div>
 
@@ -146,25 +151,22 @@
     let recordedBlobUrl = null;
     let wakeLock = null;
 
-    let delaySec = 3;
-    let durationSec = 10;
-
     const cameraVideo = document.getElementById('cameraVideo');
     const replayContainer = document.getElementById('replayContainer');
     const replayVideo = document.getElementById('replayVideo');
-    const playOverlayBtn = document.getElementById('playOverlayBtn');
     const togglePlayBtn = document.getElementById('togglePlayBtn');
     const shutterBtn = document.getElementById('shutterBtn');
     const statusBadge = document.getElementById('statusBadge');
     const countdownOverlay = document.getElementById('countdownOverlay');
     const countdownText = document.getElementById('countdownText');
     const flashOverlay = document.getElementById('flashOverlay');
+    const sleepOverlay = document.getElementById('sleepOverlay');
     const reviewControls = document.getElementById('reviewControls');
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsModal = document.getElementById('settingsModal');
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
     const saveBtn = document.getElementById('saveBtn');
-    const nextBtn = document.getElementById('nextBtn');
+    const discardBtn = document.getElementById('discardBtn');
     const speedBtns = document.querySelectorAll('.speed-btn');
     const wakeLockStatus = document.getElementById('wakeLockStatus');
 
@@ -198,18 +200,25 @@
 
     async function initCamera() {
       const needAudio = document.getElementById('settingRecordAudio').checked;
+      const quality = document.getElementById('settingQuality').value;
+      const targetHeight = quality === '720' ? 720 : 1080;
+
       try {
         if (mediaStream) {
           mediaStream.getTracks().forEach(track => track.stop());
         }
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
+          video: { 
+            height: { ideal: targetHeight },
+            facingMode: 'environment' 
+          },
           audio: needAudio
         });
         cameraVideo.srcObject = mediaStream;
+        await cameraVideo.play();
         requestWakeLock();
       } catch (e) {
-        console.warn('カメラ・マイクアクセスエラー:', e);
+        console.warn('カメラアクセスエラー:', e);
       }
     }
 
@@ -219,8 +228,7 @@
       statusBadge.textContent = 'COUNTDOWN';
       statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-yellow-500 shadow-md';
 
-      delaySec = parseInt(document.getElementById('settingDelay').value) || 3;
-      durationSec = parseInt(document.getElementById('settingDuration').value) || 10;
+      const delaySec = parseInt(document.getElementById('settingDelay').value) || 5;
 
       let count = delaySec;
       if (count > 0) {
@@ -245,6 +253,8 @@
     });
 
     function startRecording() {
+      const durationSec = parseInt(document.getElementById('settingDuration').value) || 10;
+      
       statusBadge.textContent = 'REC';
       statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-red-500 shadow-md animate-pulse';
 
@@ -260,7 +270,7 @@
           mediaRecorder.ondataavailable = (e) => {
             if (e.data.size > 0) recordedChunks.push(e.data);
           };
-          mediaRecorder.onstop = showReview;
+          mediaRecorder.onstop = enterSleepMode;
           mediaRecorder.start();
         } catch (err) {
           console.warn('MediaRecorderエラー:', err);
@@ -271,10 +281,62 @@
         if (mediaRecorder && mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
         } else {
-          showReview();
+          enterSleepMode();
         }
       }, durationSec * 1000);
     }
+
+    // 録画完了後：完全スリープモードへ移行（ハイクアップ中の電池消費をゼロ化）
+    function enterSleepMode() {
+      playBeep(440, 'sine', 0.3);
+      statusBadge.textContent = 'SLEEP';
+      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-purple-600 shadow-md';
+
+      // カメラ映像を一時停止して処理負荷を下げる
+      cameraVideo.pause();
+
+      // Blobデータの生成処理
+      if (recordedChunks.length > 0) {
+        const mimeType = recordedChunks[0].type || 'video/mp4';
+        currentBlob = new Blob(recordedChunks, { type: mimeType });
+        if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
+        recordedBlobUrl = URL.createObjectURL(currentBlob);
+        replayVideo.src = recordedBlobUrl;
+      }
+
+      // 黒画面スリープオーバーレイを表示
+      sleepOverlay.classList.remove('hidden');
+    }
+
+    // ハイクアップ後：タップして復帰しリプレイ再生
+    sleepOverlay.addEventListener('click', () => {
+      sleepOverlay.classList.add('hidden');
+      
+      statusBadge.textContent = 'REVIEW';
+      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-blue-500 shadow-md';
+
+      cameraVideo.classList.add('hidden');
+      replayContainer.classList.remove('hidden');
+
+      // 0.5倍スローで再生開始
+      replayVideo.playbackRate = 0.5;
+      replayVideo.play();
+      togglePlayBtn.textContent = '⏸️ 一時停止';
+
+      reviewControls.classList.remove('hidden');
+    });
+
+    function togglePlay() {
+      if (replayVideo.paused) {
+        replayVideo.play();
+        togglePlayBtn.textContent = '⏸️ 一時停止';
+      } else {
+        replayVideo.pause();
+        togglePlayBtn.textContent = '▶️ 再生';
+      }
+    }
+
+    togglePlayBtn.addEventListener('click', togglePlay);
 
     function generateFilename() {
       const now = new Date();
@@ -282,71 +344,26 @@
       return `offtre_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.mp4`;
     }
 
-    function showReview() {
-      playBeep(440, 'sine', 0.4);
-      statusBadge.textContent = 'REVIEW';
-      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-blue-500 shadow-md';
+    // 保存して次へ
+    saveBtn.addEventListener('click', async () => {
+      if (currentBlob) {
+        const filename = generateFilename();
+        const file = new File([currentBlob], filename, { type: currentBlob.type });
 
-      cameraVideo.classList.add('hidden');
-      replayContainer.classList.remove('hidden');
-
-      if (recordedChunks.length > 0) {
-        const mimeType = recordedChunks[0].type || 'video/mp4';
-        currentBlob = new Blob(recordedChunks, { type: mimeType });
-        if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
-        recordedBlobUrl = URL.createObjectURL(currentBlob);
-        replayVideo.src = recordedBlobUrl;
-
-        if (document.getElementById('settingAutoSave').checked) {
-          saveVideo();
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'オフトレ動画' });
+          } catch (err) {
+            if (err.name !== 'AbortError') fallbackDownload(filename);
+          }
+        } else {
+          fallbackDownload(filename);
         }
       }
+      resetToReady();
+    });
 
-      replayVideo.playbackRate = 0.5;
-
-      const autoPlay = document.getElementById('settingAutoPlay').checked;
-      if (autoPlay) {
-        replayVideo.play();
-        playOverlayBtn.classList.add('hidden');
-        togglePlayBtn.textContent = '⏸️ 一時停止';
-      } else {
-        replayVideo.pause();
-        playOverlayBtn.classList.remove('hidden');
-        togglePlayBtn.textContent = '▶️ 再生';
-      }
-
-      reviewControls.classList.remove('hidden');
-    }
-
-    function togglePlay() {
-      if (replayVideo.paused) {
-        replayVideo.play();
-        playOverlayBtn.classList.add('hidden');
-        togglePlayBtn.textContent = '⏸️ 一時停止';
-      } else {
-        replayVideo.pause();
-        playOverlayBtn.classList.remove('hidden');
-        togglePlayBtn.textContent = '▶️ 再生';
-      }
-    }
-
-    togglePlayBtn.addEventListener('click', togglePlay);
-    playOverlayBtn.addEventListener('click', togglePlay);
-
-    async function saveVideo() {
-      if (!currentBlob) return;
-      const filename = generateFilename();
-      const file = new File([currentBlob], filename, { type: currentBlob.type });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'オフトレ動画', text: 'オフトレカメラ Pro' });
-          return;
-        } catch (err) {
-          if (err.name !== 'AbortError') console.log('Web Share失敗、直接ダウンロードします');
-        }
-      }
-
+    function fallbackDownload(filename) {
       const a = document.createElement('a');
       a.href = recordedBlobUrl;
       a.download = filename;
@@ -355,7 +372,32 @@
       document.body.removeChild(a);
     }
 
-    saveBtn.addEventListener('click', saveVideo);
+    // 破棄して次へ
+    discardBtn.addEventListener('click', resetToReady);
+
+    // 次の撮影準備（メモリ解放とカメラ復帰）
+    function resetToReady() {
+      replayVideo.pause();
+      replayVideo.src = '';
+      
+      // Blobメモリの解放（ブラウザのクラッシュ防止）
+      if (recordedBlobUrl) {
+        URL.revokeObjectURL(recordedBlobUrl);
+        recordedBlobUrl = null;
+      }
+      currentBlob = null;
+
+      replayContainer.classList.add('hidden');
+      reviewControls.classList.add('hidden');
+      cameraVideo.classList.remove('hidden');
+      shutterBtn.classList.remove('hidden');
+
+      // カメラ映像の再生再開
+      cameraVideo.play();
+
+      statusBadge.textContent = 'READY';
+      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500 shadow-md';
+    }
 
     speedBtns.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -367,17 +409,6 @@
         btn.classList.remove('text-gray-400');
         replayVideo.playbackRate = parseFloat(btn.dataset.speed);
       });
-    });
-
-    nextBtn.addEventListener('click', () => {
-      replayVideo.pause();
-      replayContainer.classList.add('hidden');
-      cameraVideo.classList.remove('hidden');
-      reviewControls.classList.add('hidden');
-      shutterBtn.classList.remove('hidden');
-
-      statusBadge.textContent = 'READY';
-      statusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold text-white bg-green-500 shadow-md';
     });
 
     settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
