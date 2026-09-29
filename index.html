@@ -428,5 +428,189 @@
 
     initCamera();
   </script>
+  <!-- ▼ カメラ ピンチズーム機能 追加スクリプト ▼ -->
+<script>
+(function() {
+  // ライブカメラ用のvideo要素を自動取得（再生用videoと区別）
+  const cameraVideo = document.querySelector('video[autoplay]');
+  if (!cameraVideo) return;
+
+  const container = cameraVideo.parentElement;
+  container.style.overflow = 'hidden';
+
+  // 倍率表示インジケーター（例: 1.5x）の作成
+  const zoomBadge = document.createElement('div');
+  zoomBadge.textContent = '1.0x';
+  Object.assign(zoomBadge.style, {
+    position: 'absolute',
+    top: '72px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: 'rgba(0, 0, 0, 0.65)',
+    color: '#fff',
+    padding: '4px 14px',
+    borderRadius: '9999px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+     letterSpacing: '0.05em',
+    zIndex: '40',
+    pointerEvents: 'auto',
+    cursor: 'pointer',
+    opacity: '0',
+    transition: 'opacity 0.25s ease',
+    userSelect: 'none',
+    webkitUserSelect: 'none',
+    border: '1px solid rgba(255, 255, 255, 0.25)'
+  });
+  container.appendChild(zoomBadge);
+
+  let currentZoom = 1.0;
+  let minZoom = 1.0;
+  let maxZoom = 5.0; // 最大倍率（最大5倍に制限）
+  let supportsNativeZoom = false;
+  let videoTrack = null;
+
+  let startDist = 0;
+  let startZoom = 1.0;
+  let hideTimer = null;
+  let isApplying = false;
+  let pendingZoom = null;
+
+  // 倍率バッジを表示し、少し経ったら薄くする（1.0xの時は非表示）
+  function showZoomBadge() {
+    zoomBadge.textContent = `${currentZoom.toFixed(1)}x`;
+    zoomBadge.style.opacity = '1';
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      zoomBadge.style.opacity = currentZoom > 1.05 ? '0.6' : '0';
+    }, 1500);
+  }
+
+  // カメラストリームからズーム性能を取得・初期化
+  function initZoomCapabilities() {
+    const stream = cameraVideo.srcObject;
+    if (!stream || typeof stream.getVideoTracks !== 'function') return;
+
+    const tracks = stream.getVideoTracks();
+    if (!tracks.length) return;
+
+    videoTrack = tracks[0];
+    supportsNativeZoom = false;
+
+    if (typeof videoTrack.getCapabilities === 'function') {
+      const caps = videoTrack.getCapabilities();
+      if (caps && 'zoom' in caps) {
+        supportsNativeZoom = true;
+        minZoom = caps.zoom.min || 1.0;
+        // 端末の最大倍率と5.0倍の小さい方を上限にする
+        maxZoom = Math.min(caps.zoom.max || 5.0, 5.0);
+        const settings = videoTrack.getSettings ? videoTrack.getSettings() : {};
+        currentZoom = settings.zoom || 1.0;
+      }
+    }
+
+    // カメラ再起動時（解像度変更時など）に現在の倍率を再適用
+    if (currentZoom > 1.0) {
+      setZoom(currentZoom);
+    }
+  }
+
+  // CSSによるフォールバック拡大（ハードウェアズーム非対応端末用）
+  function applyCssZoom(zoomVal) {
+    cameraVideo.style.transformOrigin = 'center center';
+    cameraVideo.style.transform = `scale(${zoomVal})`;
+  }
+
+  // ハードウェアズームを負荷なく順番に適用する処理
+  async function applyHardwareZoom(zoomVal) {
+    if (!videoTrack) return;
+    if (isApplying) {
+      pendingZoom = zoomVal;
+      return;
+    }
+    isApplying = true;
+    try {
+      await videoTrack.applyConstraints({ advanced: [{ zoom: zoomVal }] });
+    } catch (err) {
+      try {
+        await videoTrack.applyConstraints({ zoom: zoomVal });
+      } catch (err2) {
+        // 非対応の場合はCSS拡大へ切り替え
+        supportsNativeZoom = false;
+        applyCssZoom(zoomVal);
+      }
+    } finally {
+      isApplying = false;
+      if (pendingZoom !== null) {
+        const next = pendingZoom;
+        pendingZoom = null;
+        applyHardwareZoom(next);
+      }
+    }
+  }
+
+  // 指定した倍率を適用
+  function setZoom(newZoom) {
+    currentZoom = Math.min(Math.max(newZoom, minZoom), maxZoom);
+
+    if (supportsNativeZoom && videoTrack) {
+      applyHardwareZoom(currentZoom);
+    } else {
+      applyCssZoom(currentZoom);
+    }
+    showZoomBadge();
+  }
+
+  // 2本指の距離を計算
+  function getDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  }
+
+  // ピンチ開始（2本指で触れたとき）
+  container.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      if (!videoTrack) initZoomCapabilities();
+      startDist = getDistance(e.touches);
+      startZoom = currentZoom;
+      showZoomBadge();
+    }
+  }, { passive: false });
+
+  // ピンチ移動（指を広げた・縮めたとき）
+  container.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && startDist > 0) {
+      e.preventDefault();
+      const dist = getDistance(e.touches);
+      const scale = dist / startDist;
+      setZoom(startZoom * scale);
+    }
+  }, { passive: false });
+
+  // ピンチ終了
+  container.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+      startDist = 0;
+    }
+  });
+
+  // バッジをタップすると 1.0x にワンタップでリセット
+  zoomBadge.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setZoom(1.0);
+  });
+
+  // カメラ起動・解像度変更時に自動でズーム設定を読み込む
+  cameraVideo.addEventListener('loadedmetadata', initZoomCapabilities);
+  cameraVideo.addEventListener('play', initZoomCapabilities);
+  if (cameraVideo.readyState >= 1) {
+    initZoomCapabilities();
+  }
+})();
+</script>
+<!-- ▲ カメラ ピンチズーム機能 追加スクリプト ▲ -->
+
 </body>
 </html>
